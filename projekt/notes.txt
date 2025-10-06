@@ -1,1 +1,9 @@
 make only one time cookie clicker
+
+pridat category z product page
+
+html, urllib, undetected_chromedriver,
+
+minimal regex? iba podla textu, pridat nutrition tabulku, hlavicka, timeout
+
+testy

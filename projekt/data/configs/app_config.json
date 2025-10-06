@@ -1,0 +1,6 @@
+{
+  "products_output_path": "data/products.ndjson",
+  "eval_report_path": "data/eval_report.ndjson",
+  "time_out": 2,
+  "uc_profile": "tesco-profile"
+}

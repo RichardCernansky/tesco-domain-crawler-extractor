@@ -17,7 +17,8 @@ def main():
 
     if args.cmd == "get-products":
         report = get_products(
-            configs_json="data/site_configs/configs.json",
+            site_config="data/configs/site_config.json",
+            app_config="data/configs/app_config.json",
             workers=args.workers
         )
         print("[OK] products written to", "data/products.ndjson")

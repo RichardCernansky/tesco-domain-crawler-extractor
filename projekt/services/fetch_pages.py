@@ -1,10 +1,7 @@
-import json
-from crawler.crawler import _crawl
-from eval.evaluate import evaluate_products
-import itertools
 
 
-def get_products(site_config: str, app_config: str,  workers: int = 8):
+
+def fetch_products(site_config: str, app_config: str,  workers: int = 8):
     all_products = []
     #go through all the configs
 
