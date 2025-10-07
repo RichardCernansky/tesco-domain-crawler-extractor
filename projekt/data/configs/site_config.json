@@ -1,9 +1,9 @@
 {
   "site": "tesco",
   "start_url": "https://www.tesco.com/groceries/en-GB",
-  "max_pages": 201,
+  "max_pages": 1001,
   "regexes": {
-    "body_regex": "",
+    "body_regex": "<body\\b[^>]*>(.*?)</body\\s*>",
     "href_regex": "href=[\"']([^\"']+)[\"']",
     "href_filter_tesco": "(?i)^https?://(?:www\\.)?tesco\\.com/groceries/en-GB",
     "name_regex": "data-auto=[\"']pdp-product-title[\"'][^>]*>(.*?)</h1>",

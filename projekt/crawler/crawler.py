@@ -62,9 +62,10 @@ class Crawler:
         seen_this_run = set(u for (u, _, _) in frontier)
 
         while frontier and (max_pages is None or processed < max_pages):
-            num_already_visited = len(seen_this_run)+len(visited)
-            if (num_already_visited % 100) == 0:
-                print(f"Number of already visited: {num_already_visited}")
+            num_already_visited = len(frontier)
+            if (processed % 20) == 0:
+                print(f"Number of STORED: {processed}")
+                print(f"Number of in-stack: {num_already_visited}")
 
             url, depth, ref = frontier.popleft()
             if url in visited:
@@ -130,8 +131,7 @@ class Crawler:
                 f.write(json.dumps(meta, ensure_ascii=False) + "\n")
 
             processed += 1
-
-            print(f"visited: {url}")
+            print(url)
 
         print(f"Number of processed: {processed}")
         return {"processed": processed, "visited_count": len(visited)}
