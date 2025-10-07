@@ -1,178 +1,172 @@
-# crawler/crawler.py  (no multiprocessing)
-
-import time, random
+# crawler/crawler.py
+import json, time, re, hashlib
 from pathlib import Path
-from urllib.parse import  urljoin
-from crawler.fetcher import Fetcher
-from my_utils import *
-from html import unescape
+from collections import deque
+from urllib.parse import urlsplit, urlunsplit, urljoin
+
+from .fetcher import Fetcher  # your Selenium-based fetcher
+
+def _normalize(url: str, base: str | None = None) -> str:
+    if base:
+        url = urljoin(base, url)
+    s = urlsplit(url)
+    s = s._replace(scheme=s.scheme.lower(), netloc=s.netloc.lower(), fragment="")
+    path = s.path or "/"
+    return urlunsplit((s.scheme, s.netloc, path, s.query, ""))
+
+def _content_hash(html: str) -> str:
+    return hashlib.sha256((html or "").encode("utf-8", "ignore")).hexdigest()
+
+def _url_fingerprint(url: str) -> str:
+    return hashlib.sha256(url.encode("utf-8", "ignore")).hexdigest()
 
 class Crawler:
+    """
+    Disk-log crawler:
+      - VISITED URLs in app_cfg["visited_path"] (one URL per line)
+      - STACK pushes in app_cfg["stack_path"]   (append-only JSONL of {"event":"push",...})
+      - Per-page metadata in app_cfg["metadata_path"] (NDJSON)
+      - HTML saved under app_cfg["storage_path"] (flat files)
+    """
+    def __init__(self, site_cfg: dict, app_cfg: dict):
+        self.site_cfg = site_cfg
+        self.app_cfg  = app_cfg
 
-    def __init__(self):
-        self.profile = str(Path.home() / ".uc" / "tesco-profile-3")
-        self.fetcher = Fetcher()
+        # file paths come from app_cfg (they exist)
+        self.storage_root  = Path(self.app_cfg["storage_path"])
+        self.stack_path    = Path(self.app_cfg["stack_path"])
+        self.visited_path  = Path(self.app_cfg["visited_path"])
+        self.metadata_path = Path(self.app_cfg["metadata_path"])
 
-        return
+        # profile + fetcher (profile path only passed if your Fetcher uses it)
+        self.fetcher = Fetcher(self)
+        self.timeout = int(self.app_cfg.get("time_out", 2))
 
-    def parse_listing_page(self, html: str, base_url: str, cat_cfg: dict):
-        flags = re.IGNORECASE | re.DOTALL
-        hrefs = re.findall(r'href=["\']([^"\']+)["\']', html, flags)
-        prod_re = re.compile(cat_cfg["product_url_regex"], flags)
-        product_urls = sorted({urljoin(base_url, h) for h in hrefs if prod_re.search(h)})
+    # ---------- public API ----------
+    def crawl(self):
+        start_url = self.site_cfg["start_url"]
+        max_pages = self.site_cfg["max_pages"]
+        visited = self._load_visited_set()
 
-        next_btn_re = re.compile(cat_cfg["next_button_regex"], flags)
-        m = next_btn_re.search(html)
-        next_url = None
-        if m:
-            next_href = urljoin(base_url, m.group(1))
-            next_url = next_href.replace("&amp;", "&")
+        # rebuild frontier from existing pushes (never wipe the stack)
+        frontier = self._replay_pushes(visited)
 
-        return {"product_urls": product_urls, "next_page": next_url}
-
-    def list_product_urls_from_listings(
-        self,
-        start_url: str,
-        cat_cfg: dict,
-        max_pages: int | None = None,
-        headless: bool = False,
-        respect_robots: bool = True,
-    ):
-        seen, out = set(), set()
-        driver = create_driver(profile_dir=self.profile, headless=headless)
-        url = start_url
-        try:
-            while url and url not in seen:
-                seen.add(url)
-                fetcher = self.fetcher
-                html = fetcher.fetch_html_dynamic(url, driver=driver, headless=headless, respect_robots=respect_robots)
-                print(f"Fetched url:{url}.")
-                res = self.parse_listing_page(html, url, cat_cfg)
-
-                length=  len(res["product_urls"])
-                next_one = res["next_page"]
-                print(f"Number of product urls fetched: {length}")
-                print(f"Next page:{next_one}")
-
-                out.update(res["product_urls"])
-                url = res["next_page"]
-
-                if max_pages and len(out) >= max_pages:
-                    break
-                if url in seen:
-                    break
-        finally:
-            driver.quit()
-        return sorted(out)
-
-    def parse_product_html(self, html: str, cfg: dict):
-        pcfg = cfg["product"]
-        fl = flags(pcfg.get("flags"))
-
-        #name
-        name_m = re.search(pcfg["name_regex"], html, flags=fl)
-        name = unescape(name_m.group(1).strip()) if name_m else None
-
-        #currency, price
-        price_m = re.search(pcfg["price_regex"], html, flags=fl)
-        cur, val = (None, None)
-        if price_m:
-            gi, gv = pcfg.get("price_capture_groups", [1, 2])
-            cur = price_m.group(gi).strip()
-            val = float(price_m.group(gv))
-
-        #brand
-        brand = None
-        b1 = re.search(pcfg["brand_regex_aria"], html, flags=fl)
-        if b1:
-            brand = unescape(b1.group(1).strip())
-        else:
-            b2 = re.search(pcfg["brand_regex_facet"], html, flags=fl)
-            if b2:
-                brand = unescape(b2.group(1).replace("%20", " ").replace("%2D", "-"))
-
-        #ingredients
-        ingredients = None
-        m = re.search(pcfg["ingredients_regex"], html, flags=fl)
-        if m:
-            inner = m.group(1)
-            inner_stripped = strip_html_plain(inner)
-            ingredients = get_ingredients(inner_stripped)
-
-        #category
-        cm = re.search(pcfg["category_regex"], html, flags=fl)
-        category = unescape(cm.group(1).strip()) if cm else None
-
-        # description
-        dm = re.search(pcfg["description_regex"], html, flags=fl)
-        description = None
-        description_lines = None
-        if dm:
-            block = dm.group(1)
-            raw_lines = re.findall(pcfg["description_lines_regex"], block, flags=fl)
-            lines = []
-            for s in raw_lines:
-                t = unescape(strip_html_plain(s).strip())
-                if t:
-                    lines.append(t)
-            description_lines = lines or None
-            description = " ".join(description_lines) if description_lines else None
-
-        return {
-            "name": name,
-            "brand": brand,
-            "price_currency": cur,
-            "price": val,
-            "ingredients": ingredients,
-            "category": category,
-            "description": description,
-        }
-
-    def process_product_pages_sequential(
-        self,
-        product_urls: list[str],
-        cfg: dict,
-        headless: bool = False,
-        respect_robots: bool = True,
-    ):
-        """Visit every product URL sequentially using ONE driver."""
-        driver = create_driver(profile_dir=self.profile, headless=headless)
-        out = []
-        try:
-            for u in product_urls:
-                try:
-                    print("started fetching")
-                    html = self.fetcher.fetch_html_dynamic(
-                        u,
-                        driver=driver,                 # reuse same driver
-                        headless=headless,
-                        wait_selector=None,            # SSR-first: no heavy waits
-                        respect_robots=respect_robots,
-                        retries=1,
-                    )
-                    print(f"Fetched url:{u}.")
-                    data = self.parse_product_html(html, cfg)
-                    print(data)
-                    data.update({"site": cfg.get("site", "unknown"), "url": u})
-                    out.append(data)
-                    time.sleep(0.08 + random.random() * 0.15)  # tiny jitter; be polite
-                except Exception as e:
-                    out.append({"site": cfg.get("site", "unknown"), "url": u, "error": str(e)})
-        finally:
-            driver.quit()
-        return out
+        # seed only if nothing is pending
+        if not frontier:
+            su = _normalize(start_url)
+            self._append_push(su)
+            frontier = self._replay_pushes(visited)
 
 
-    def crawl(self, cfg: dict, max_pages: int):
-        """workers kept for API compatibility; ignored (no multiprocessing)."""
-        start_url = cfg["start_url"]
-        cat = cfg["category"]
+        processed = 0
+        seen_this_run = set(u for (u, _, _) in frontier)
 
-        product_pages = self.list_product_urls_from_listings(
-            start_url, cat, max_pages=max_pages, headless=False, respect_robots=True
-        )
+        while frontier and (max_pages is None or processed < max_pages):
+            num_already_visited = len(seen_this_run)+len(visited)
+            if (num_already_visited % 100) == 0:
+                print(f"Number of already visited: {num_already_visited}")
 
-        parsed_products = self.process_product_pages_sequential(
-            product_pages, cfg, headless=False, respect_robots=True
-        )
-        return parsed_products
+            url, depth, ref = frontier.popleft()
+            if url in visited:
+                continue
+
+            start_t = time.time()
+            status, error = "ok", None
+            html, content_path = "", None
+            try:
+                html = self.fetcher.fetch_html(url)
+
+                if not html:
+                    status = "empty"
+            except Exception as e:
+                status = "error"
+                error = str(e)
+
+            if html:
+                ts = int(time.time())
+                uhash = _url_fingerprint(url)[:12]
+                chash = _content_hash(html)[:12]
+                fname = f"{ts}_{uhash}_{chash}.html"
+                fpath = (self.storage_root / fname)
+                fpath.write_text(html, encoding="utf-8", errors="ignore")
+                content_path = fpath.as_posix()
+
+            # mark visited (disk + memory)
+            with self.visited_path.open("a", encoding="utf-8") as f:
+                f.write(url + "\n")
+            visited.add(url)
+
+            # metadata
+            meta = {
+                "url": url,
+                "depth": depth,
+                "referrer": ref,
+                "status": status,
+                "http_code": None,  # Selenium-only
+                "fetched_at": start_t,
+                "elapsed_sec": time.time() - start_t,
+                # title
+                "outlink_count": 0,
+                "content_hash": _content_hash(html) if html else None,
+                "content_path": content_path,
+                "error": error,
+            }
+
+            # expand links only on success
+            if status == "ok" and html:
+                links = self._extract_links(html)
+                meta["outlink_count"] = len(links)
+                for href in links:
+                    cand = _normalize(href, base=url)
+                    if not self._in_scope(cand):
+                        continue
+                    if cand in visited or cand in seen_this_run: # if seen -> skip
+                        continue
+                    frontier.append((cand, depth + 1, url))
+                    seen_this_run.add(cand)
+                    self._append_push(cand)
+
+            with self.metadata_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(meta, ensure_ascii=False) + "\n")
+
+            processed += 1
+
+            print(f"visited: {url}")
+
+        print(f"Number of processed: {processed}")
+        return {"processed": processed, "visited_count": len(visited)}
+
+    def _load_visited_set(self) -> set[str]:
+        with self.visited_path.open("r", encoding="utf-8") as f:
+            return {ln.strip() for ln in f if ln.strip()}
+
+    def _append_push(self, url: str):
+        # store ONLY the URL (one per line), no JSON
+        with self.stack_path.open("a", encoding="utf-8") as f:
+            f.write(url.strip() + "\n")
+
+    def _replay_pushes(self, visited_set: set[str]) -> deque:
+        q = deque()
+        queued = set()
+        with self.stack_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                u = line.strip()
+                if not u:
+                    continue
+                norm = _normalize(u)
+                if norm in visited_set or norm in queued:
+                    continue
+                # depth/referrer info is not stored; default to 0 / None
+                q.append((norm, 0, None))
+                queued.add(norm)
+        return q
+
+    def _extract_links(self, html: str) -> list[str]:
+        """Extract all hrefs using the regex from config."""
+        pat = self.site_cfg["regexes"]["href_regex"]  # e.g. href=["']([^"']+)["']
+        return re.findall(pat, html , flags=re.I | re.S)
+
+    def _in_scope(self, url: str) -> bool:
+        """Keep only site-specific links using the filter regex from config."""
+        filt = self.site_cfg["regexes"]["href_filter_tesco"]  # e.g. ^(?:https?:)?//(?:...)?tesco\.com(?:/|$)|^/
+        return re.match(filt, url, flags=re.I) is not None

@@ -62,29 +62,3 @@ def strip_html_plain(s: str) -> str:
     s = re.sub(r'^\s*ingredients?\s*[:\-\u2013\u2014]\s*', '', s, flags=re.I)
     return re.sub(r'\s+', ' ', s).strip(' .;,[]')
 
-def create_driver(profile_dir: str | None = None, headless: bool = True, driver_path: str | None = None):
-    import undetected_chromedriver as uc
-    opts = uc.ChromeOptions()
-    opts.add_argument("--lang=en-GB")
-    opts.add_argument("--window-size=1280,2000")
-    opts.add_argument("--disable-blink-features=AutomationControlled")
-    opts.add_argument("--no-first-run");
-    opts.add_argument("--no-default-browser-check")
-    if profile_dir:
-        opts.add_argument(f"--user-data-dir={profile_dir}")
-    if headless:
-        opts.add_argument("--headless=new")
-
-    # IMPORTANT: point UC at the preinstalled driver to avoid concurrent downloads
-    if driver_path:
-        driver = uc.Chrome(options=opts, driver_executable_path=driver_path)
-    else:
-        driver = uc.Chrome(options=opts)
-
-    # (optional speed) block heavy assets
-    # driver.execute_cdp_cmd("Network.enable", {})
-    # driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [
-    #     "*.jpg","*.jpeg","*.png","*.gif","*.webp","*.svg",
-    #     "*.woff","*.woff2","*.ttf","*.mp4","*.avi","*.m4v","*.mp3"
-    # ]})
-    return driver

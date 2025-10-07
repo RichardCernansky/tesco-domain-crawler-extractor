@@ -1,6 +1,17 @@
 {
-  "products_output_path": "data/products.ndjson",
+  "storage_path": "data/storage",
+  "stack_path": "data/logs/stack.txt",
+  "visited_path": "data/logs/visited.txt",
+  "metadata_path": "data/logs/metadata.ndjson",
   "eval_report_path": "data/eval_report.ndjson",
   "time_out": 2,
-  "uc_profile": "tesco-profile"
+  "driver_wait_def": 10,
+  "uc_profile": "tesco-profile-6",
+  "continue_from_stack": false,
+  "user_agents": [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edg/126.0.0.0 Chrome/126.0.0.0 Safari/537.36"
+  ]
 }

@@ -1,16 +1,11 @@
 {
   "site": "tesco",
-  "start_url": "https://www.tesco.com/groceries/en-GB/shop/fresh-food/all",
-  "max_pages": 25,
-
-  "category": {
-    "product_url_regex": "/groceries/en-GB/products/",
-    "href_hints": ["/groceries/en-GB/"],
-    "exclude_regex": "(help|account|login|privacy|terms|recipes|clubcard|basket|checkout|favourites)",
-   "next_button_regex": "aria-label=[\"\\']Next page[\"\\'][^>]*href=[\"\\']([^\"\\']+)[\"\\']"
-  },
-
-  "product": {
+  "start_url": "https://www.tesco.com/groceries/en-GB",
+  "max_pages": 201,
+  "regexes": {
+    "body_regex": "",
+    "href_regex": "href=[\"']([^\"']+)[\"']",
+    "href_filter_tesco": "(?i)^https?://(?:www\\.)?tesco\\.com/groceries/en-GB",
     "name_regex": "data-auto=[\"']pdp-product-title[\"'][^>]*>(.*?)</h1>",
     "price_regex": "(?:class=[\"'][^\"']*priceText[^\"']*[\"'][^>]*>|data-auto=[\"']price-value[\"'])[^£€]*([£€])\\s*([0-9]+(?:\\.[0-9]{1,2})?)",
     "brand_regex_aria": "aria-label=\\\"Navigate to\\s+([^\\\"]+)\\s+brand page\\\"",

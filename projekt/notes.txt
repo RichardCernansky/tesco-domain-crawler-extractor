@@ -4,6 +4,6 @@ pridat category z product page
 
 html, urllib, undetected_chromedriver,
 
-minimal regex? iba podla textu, pridat nutrition tabulku, hlavicka, timeout
+minimal regex? najlepsie iba podla textu, pridat nutrition tabulku, hlavicka, random  timeout a random waits, a robots?, only html body?
 
 testy
