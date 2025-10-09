@@ -7,3 +7,4 @@ html, urllib, undetected_chromedriver,
 minimal regex? regex najlepsie iba podla textu, pridat nutrition tabulku, hlavicka, random  timeout a random waits, only html body?
 
 testy
+
