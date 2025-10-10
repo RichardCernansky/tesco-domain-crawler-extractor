@@ -3,6 +3,7 @@ import json, time, re, hashlib
 from pathlib import Path
 from collections import deque
 from urllib.parse import urlsplit, urlunsplit, urljoin
+import random
 
 from .fetcher import Fetcher  # your Selenium-based fetcher
 
@@ -41,6 +42,8 @@ class Crawler:
         # profile + fetcher (profile path only passed if your Fetcher uses it)
         self.fetcher = Fetcher(self)
         self.timeout = int(self.app_cfg.get("time_out", 2))
+        self.sleep_min = float(self.app_cfg.get("sleep_min"))
+        self.sleep_max = float(self.app_cfg.get("sleep_max"))
 
     # ---------- public API ----------
     def crawl(self):
@@ -74,6 +77,8 @@ class Crawler:
             start_t = time.time()
             status, error = "ok", None
             html, content_path = "", None
+
+            self._jitter()
             try:
                 html = self.fetcher.fetch_html(url)
 
@@ -135,6 +140,9 @@ class Crawler:
 
         print(f"Number of processed: {processed}")
         return {"processed": processed, "visited_count": len(visited)}
+
+    def _jitter(self):
+        time.sleep(random.uniform(self.sleep_min, self.sleep_max))
 
     def _load_visited_set(self) -> set[str]:
         with self.visited_path.open("r", encoding="utf-8") as f:

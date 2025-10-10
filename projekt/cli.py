@@ -1,13 +1,12 @@
 import argparse, json
-from services.services import fetch_pages
+from services.services import fetch_pages,extract_products
 
 
 def build_arg_parser():
     ap = argparse.ArgumentParser(prog="crawler")
     sub = ap.add_subparsers(dest="cmd", required=True)
     gp = sub.add_parser("fetch-pages", help="Crawl products from ndjson configs (one per line).")
-    gp.add_argument("--max-pages", type=int, default=0, help="Max listing pages per site (0 = all).")
-    gp.add_argument("--workers", type=int, default=8, help="Thread workers.")
+    ep = sub.add_parser("extract-products", help="Parse saved HTML files and emit NDJSON.")
 
     return ap
 
@@ -26,7 +25,8 @@ def main():
     if args.cmd == "fetch-pages":
         fetch_pages(site_cfg, app_cfg)
 
-    elif args.cmd == "get-product":
+    elif args.cmd == "extract-products":
+        extract_products(site_cfg, app_cfg)
         print("[OK] products written to", "data/products.ndjson")
 
 

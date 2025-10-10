@@ -1,8 +1,5 @@
-
-import time, random
+import json
 from pathlib import Path
-from urllib.parse import  urljoin
-from crawler.fetcher import Fetcher
 from my_utils import *
 from html import unescape
 
@@ -15,67 +12,50 @@ class Extractor:
         #add body regex
         return
 
-    def parse_listing_page(self, html: str, base_url: str, cat_cfg: dict):
-        flags = re.IGNORECASE | re.DOTALL
-        hrefs = re.findall(r'href=["\']([^"\']+)["\']', html, flags)
-        prod_re = re.compile(cat_cfg["product_url_regex"], flags)
-        product_urls = sorted({urljoin(base_url, h) for h in hrefs if prod_re.search(h)})
-
-        next_btn_re = re.compile(cat_cfg["next_button_regex"], flags)
-        m = next_btn_re.search(html)
-        next_url = None
-        if m:
-            next_href = urljoin(base_url, m.group(1))
-            next_url = next_href.replace("&amp;", "&")
-
-        return {"product_urls": product_urls, "next_page": next_url}
-
-
-    def parse_product_html(self, html: str, cfg: dict):
-        pcfg = cfg["product"]
-        fl = flags(pcfg.get("flags"))
-
-        #name
-        name_m = re.search(pcfg["name_regex"], html, flags=fl)
+    def get_name(self, html, rx, fl):
+        name_m = re.search(rx["name_regex"], html)
         name = unescape(name_m.group(1).strip()) if name_m else None
+        return name
 
-        #currency, price
-        price_m = re.search(pcfg["price_regex"], html, flags=fl)
-        cur, val = (None, None)
-        if price_m:
-            gi, gv = pcfg.get("price_capture_groups", [1, 2])
-            cur = price_m.group(gi).strip()
-            val = float(price_m.group(gv))
-
-        #brand
-        brand = None
-        b1 = re.search(pcfg["brand_regex_aria"], html, flags=fl)
-        if b1:
-            brand = unescape(b1.group(1).strip())
-        else:
-            b2 = re.search(pcfg["brand_regex_facet"], html, flags=fl)
-            if b2:
-                brand = unescape(b2.group(1).replace("%20", " ").replace("%2D", "-"))
-
-        #ingredients
+    def get_ingredients(self, html, rx, fl):
         ingredients = None
-        m = re.search(pcfg["ingredients_regex"], html, flags=fl)
+        m = re.search(rx["ingredients_regex"], html)
         if m:
             inner = m.group(1)
             inner_stripped = strip_html_plain(inner)
             ingredients = get_ingredients(inner_stripped)
 
-        #category
-        cm = re.search(pcfg["category_regex"], html, flags=fl)
-        category = unescape(cm.group(1).strip()) if cm else None
+        return ingredients
 
+    def get_price_and_currency(self, html, rx, fl):
+        price_m = re.search(rx["price_regex"], html)
+        cur, val = (None, None)
+        if price_m:
+            gi, gv = rx.get("price_capture_groups")
+            cur = price_m.group(gi).strip()
+            val = float(price_m.group(gv))
+        return (cur, val)
+
+    def get_brand(self, html, rx, fl):
+        #brand
+        brand = None
+        b1 = re.search(rx["brand_regex"], html)
+        if b1:
+            brand = unescape(b1.group(1).strip())
+        return brand
+
+    def get_category(self, html, rx, fl):
+        cm = re.search(rx["category_regex"], html)
+        category = unescape(cm.group(1).strip()) if cm else None
+        return category
+
+    def get_description(self, html, rx, fl):
         # description
-        dm = re.search(pcfg["description_regex"], html, flags=fl)
+        dm = re.search(rx["description_regex"], html)
         description = None
-        description_lines = None
         if dm:
             block = dm.group(1)
-            raw_lines = re.findall(pcfg["description_lines_regex"], block, flags=fl)
+            raw_lines = re.findall(rx["description_lines_regex"], block)
             lines = []
             for s in raw_lines:
                 t = unescape(strip_html_plain(s).strip())
@@ -83,16 +63,83 @@ class Extractor:
                     lines.append(t)
             description_lines = lines or None
             description = " ".join(description_lines) if description_lines else None
+        return description
+
+    def get_nutrition_table(self, html, rx, fl):
+        nut_rx = rx.get("nutrition_regexes")
+        out = {}
+        for key, pattern in nut_rx.items():
+            m = re.search(pattern, html)
+            if m:
+                val = unescape(strip_html_plain(m.group(1)).strip())
+                out[key] = val
+            else:
+                out[key] = None
+
+        return out
+
+    def parse_product_html(self, html: str, rx: dict):
+        fl = flags(rx.get("flags"))
+        #name
+        name = self.get_name(html, rx, fl)
+        ingredients = self.get_ingredients(html, rx, fl)
+        currency, price = self.get_price_and_currency(html, rx, fl)
+        brand = self.get_brand(html, rx, fl)
+        category = self.get_category(html, rx, fl)
+        description = self.get_description(html, rx, fl)
+        nutrition_table = self.get_nutrition_table(html, rx, fl)
 
         return {
             "name": name,
             "brand": brand,
-            "price_currency": cur,
-            "price": val,
+            "price_currency": currency,
+            "price": price,
             "ingredients": ingredients,
             "category": category,
             "description": description,
+            "nutrition_table": nutrition_table
         }
 
     def extract_products(self):
-        return
+        products = []
+
+        # site-level regex bundle
+        rx = self.site_cfg["regexes"]
+        fl = flags(rx.get("flags"))  # uses your my_utils.flags -> e.g., I|S
+        body_re = re.compile(rx["body_regex"], fl)
+
+        storage_dir = Path("data/storage")
+        storage = sorted(storage_dir.glob("*.html"))
+        total = len(storage)
+
+        for i, html_path in enumerate(storage):
+            if i % 100 == 0:
+                print(f"[{i}/{total}] processed so far | added={len(products)} | last={html_path.name}", flush=True)
+
+            try:
+                html = html_path.read_text(encoding="utf-8", errors="ignore")
+                m = body_re.search(html)
+                body = m.group(1) if m else html  # fallback if no <body> match
+                # parse using the same regexes under the "product" key
+                parsed = self.parse_product_html(body, rx)
+                required = ("name",  "price_currency", "price", "description", "nutrition_table")
+                if all(parsed.get(k) is not None for k in required):
+                    parsed["source_file"] = str(html_path)
+                    products.append(parsed)
+            except Exception:
+                print(f"ERROR in processing file {html_path.name}", flush=True)
+                continue
+
+        # optional final summary
+        print(f"Done. Files: {total}, products added: {len(products)}")
+
+        return products
+
+    def save_products(self, products):
+        out_path = self.app_cfg["products_out_path"]
+        p = Path(out_path)
+        mode = "w"
+        with p.open(mode, encoding="utf-8") as f:
+            for rec in products:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        return {"path": str(p), "count": len(products)}

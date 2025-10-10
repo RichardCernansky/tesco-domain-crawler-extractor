@@ -55,6 +55,9 @@ class Fetcher:
             opts.add_argument(f"--user-data-dir={profile_dir}")
 
         driver = uc.Chrome(options=opts)
+        # ---- timeouts on the driver ----
+        driver.set_page_load_timeout(self.app_cfg.get("page_load_timeout"))
+        driver.set_script_timeout(self.app_cfg.get("script_timeout"))
 
         # Also override via CDP so subrequests match.
         try:
@@ -117,10 +120,10 @@ class Fetcher:
         except Exception:
             return False
 
-    def _accept_cookies(self, driver, timeout_per_try=2) -> bool:
+    def _accept_cookies(self, driver, timeout) -> bool:
         """Minimal cookie clicker for a simple 'Accept all' button."""
         try:
-            WebDriverWait(driver, timeout_per_try).until(
+            WebDriverWait(driver, timeout).until(
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Accept all')]"))
             ).click()
             print("Cookies accepted.")

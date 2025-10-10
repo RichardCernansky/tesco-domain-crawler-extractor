@@ -8,3 +8,29 @@ minimal regex? regex najlepsie iba podla textu, pridat nutrition tabulku, hlavic
 
 testy
 
+
+REGEX NOTES:
+0. flags - I - case insensitive, S - . matches also '\n'
+1. PRICE REGEX
+(?:(?:.*?Aldi Price Match){2}|.*?Reviews?)
+Non-capturing (?:) group with an OR:
+(?:.*?Aldi Price Match){2} → advance lazily through text until you’ve passed the second “Aldi Price Match”.
+.*?Reviews? → or advance to “Review”/“Reviews”.
+Effect: position the engine after your chosen anchor.
+.*?>
+Lazily consume characters up to the next > (the end of the next start tag), so the next thing is the tag’s inner text.
+\s*
+Optional whitespace right after >.
+[^<]*
+Any inner text until the next < (stays inside this text node).
+([£])
+Group 1: capture the currency symbol £.
+(Change to ([£€]) if you want euros too.)
+(?:\s|&nbsp;)*
+Allow spaces or &nbsp; between the symbol and the number.
+([0-9]+(?:\.[0-9]{1,2})?)
+Group 2: capture the numeric price: digits, optional decimal point + 1–2 digits.
+<
+Require that we’re still before the next tag start, keeping the match inside the same text node.
+
+2.

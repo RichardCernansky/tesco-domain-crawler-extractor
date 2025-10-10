@@ -9,5 +9,8 @@ def fetch_pages(site_cfg: dict, app_cfg: dict):
 
 def extract_products(site_cfg: dict, app_cfg: dict):
     extractor = Extractor(site_cfg, app_cfg)
-    extractor.extract_products()
+    products = extractor.extract_products()
+    stats = extractor.save_products(products)
+    print(stats)
+
     return
