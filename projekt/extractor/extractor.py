@@ -29,12 +29,17 @@ class Extractor:
 
     def get_price_and_currency(self, html, rx, fl):
         price_m = re.search(rx["price_regex"], html)
-        cur, val = (None, None)
+        cur, price = (None, None)
+        unit_bundle = None
         if price_m:
-            gi, gv = rx.get("price_capture_groups")
-            cur = price_m.group(gi).strip()
-            val = float(price_m.group(gv))
-        return (cur, val)
+            gcurr, gprice, gunit_price, gper_quantity, gper_unit = 1,2,4,5,6
+            cur = price_m.group(gcurr).strip()
+            price = float(price_m.group(gprice))
+            unit_price = float(price_m.group(gunit_price))
+            unit_quant = float(price_m.group(gper_quantity))
+            unit = price_m.group(gper_unit)
+            unit_bundle = {"price": unit_price, "quantity": unit_quant, "unit": unit}
+        return (cur, price, unit_bundle)
 
     def get_brand(self, html, rx, fl):
         #brand
@@ -83,7 +88,7 @@ class Extractor:
         #name
         name = self.get_name(html, rx, fl)
         ingredients = self.get_ingredients(html, rx, fl)
-        currency, price = self.get_price_and_currency(html, rx, fl)
+        currency, price, unit_bundle = self.get_price_and_currency(html, rx, fl)
         brand = self.get_brand(html, rx, fl)
         category = self.get_category(html, rx, fl)
         description = self.get_description(html, rx, fl)
@@ -97,7 +102,8 @@ class Extractor:
             "ingredients": ingredients,
             "category": category,
             "description": description,
-            "nutrition_table": nutrition_table
+            "nutrition_table": nutrition_table,
+            "unit_bundle": unit_bundle
         }
 
     def extract_products(self):
@@ -122,7 +128,7 @@ class Extractor:
                 body = m.group(1) if m else html  # fallback if no <body> match
                 # parse using the same regexes under the "product" key
                 parsed = self.parse_product_html(body, rx)
-                required = ("name",  "price_currency", "price", "description", "nutrition_table")
+                required = ("name",  "price")
                 if all(parsed.get(k) is not None for k in required):
                     parsed["source_file"] = str(html_path)
                     products.append(parsed)

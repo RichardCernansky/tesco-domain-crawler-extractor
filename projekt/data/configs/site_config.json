@@ -8,7 +8,7 @@
     "href_filter_tesco": "^https?://(?:www\\.)?tesco\\.com/groceries/en-GB",
 
     "ingredients_regex": "<h3[^>]*>\\s*Ingredients\\s*</h3>\\s*<div[^>]*>(.*?)</div>",
-    "price_regex": "Reviews\\s*<[\\s\\S]{0,4000}?([£€])(?:\\s|&nbsp;|<[^>]+>)*([0-9]+(?:\\.[0-9]{1,2})?)\\s*<",
+    "price_regex": "Reviews\\s*<[\\s\\S]{0,4000}?([£€])(?:\\s|&nbsp;|<[^>]+>)*([0-9]+(?:\\.[0-9]{1,2})?)\\s*</p>[\\s\\S]{0,600}?([£€])(?:\\s|&nbsp;|<[^>]+>)*([0-9]+(?:\\.[0-9]{1,2})?)\\s*(?:/|&frasl;|&#x2F;)\\s*([0-9]+(?:\\.[0-9]+)?)\\s*([A-Za-z]+)",
     "brand_regex": ">\\s*View all\\s+[^<]*<(?:(?!>\\s*View all\\s)[\\s\\S])*?>\\s*View all\\s+([^<]+?)\\s*<",
     "category_regex": ">\\s*View all\\s+([^<]+?)\\s*<",
     "name_regex": "pdp-product-title[\"'][^>]*>\\s*([^<]+?)\\s*</h1>",
@@ -24,7 +24,6 @@
       "fibre": "Nutrition[\\s\\S]*?Fib(?:re|er)\\s*</th>\\s*<td>\\s*([^<]+?)\\s*</td>"
     },
 
-    "price_capture_groups": [1, 2],
     "flags": ["I", "S"]
   }
 }
