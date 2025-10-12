@@ -49,101 +49,45 @@ class Crawler:
         self.sleep_min = float(self.app_cfg.get("sleep_min"))
         self.sleep_max = float(self.app_cfg.get("sleep_max"))
 
-    # Run the main crawling loop
-    def crawl(self):
-        start_url = self.site_cfg["start_url"]
-        max_pages = self.site_cfg["max_pages"]
-        visited = self._load_visited_set()
+    #Saves HTML content, marks URL as visited, and writes metadata
+    def _save_html(self, url, html, depth, ref, start_t, status, error, visited, outlink_count):
+        content_path = None
 
-        # Restore pending URLs from previous runs
-        frontier = self._replay_pushes(visited)
+        if html:
+            # Create a unique, deterministic filename (timestamp + URL hash + content hash)
+            ts = int(time.time())
+            uhash = _url_fingerprint(url)[:12]
+            chash = _content_hash(html)[:12]
+            fname = f"{ts}_{uhash}_{chash}.html"
+            fpath = self.storage_root / fname
+            fpath.write_text(html, encoding="utf-8", errors="ignore")
+            content_path = fpath.as_posix()
 
-        # Seed start URL if stack is empty
-        if not frontier:
-            su = _normalize(start_url)
-            self._append_push(su)
-            frontier = self._replay_pushes(visited)
+        # Append URL to the visited log (append-only; safe even if interrupted)
+        with self.visited_path.open("a", encoding="utf-8") as f:
+            f.write(url + "\n")
+        visited.add(url)  # O(1) duplicate check during runtime
 
-        processed = 0
-        seen_this_run = set(u for (u, _, _) in frontier)
+        # Minimal but sufficient metadata for later analysis
+        meta = {
+            "url": url,
+            "depth": depth,
+            "referrer": ref,
+            "status": status,
+            "http_code": None,
+            "fetched_at": start_t,
+            "elapsed_sec": time.time() - start_t,  # Total time spent fetching
+            "outlink_count": outlink_count,
+            "content_hash": _content_hash(html) if html else None,
+            "content_path": content_path,
+            "error": error,
+        }
 
-        # Main loop: fetch pages until stack empty or limit reached
-        while frontier and (max_pages is None or processed < max_pages):
-            num_already_visited = len(frontier)
-            if (processed % 20) == 0:
-                print(f"Number of STORED: {processed}")
-                print(f"Number of in-stack: {num_already_visited}")
+        # Line-delimited JSON for easy streaming and later parsing
+        with self.metadata_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(meta, ensure_ascii=False) + "\n")
 
-            url, depth, ref = frontier.popleft()
-            if url in visited:
-                continue
-
-            start_t = time.time()
-            status, error = "ok", None
-            html, content_path = "", None
-
-            self._jitter()
-            try:
-                html = self.fetcher.fetch_html(url)
-                if not html:
-                    status = "empty"
-            except Exception as e:
-                status = "error"
-                error = str(e)
-
-            # Save HTML to disk if retrieved successfully
-            if html:
-                ts = int(time.time())
-                uhash = _url_fingerprint(url)[:12]
-                chash = _content_hash(html)[:12]
-                fname = f"{ts}_{uhash}_{chash}.html"
-                fpath = (self.storage_root / fname)
-                fpath.write_text(html, encoding="utf-8", errors="ignore")
-                content_path = fpath.as_posix()
-
-            # Mark URL as visited
-            with self.visited_path.open("a", encoding="utf-8") as f:
-                f.write(url + "\n")
-            visited.add(url)
-
-            # Build per-page metadata entry
-            meta = {
-                "url": url,
-                "depth": depth,
-                "referrer": ref,
-                "status": status,
-                "http_code": None,
-                "fetched_at": start_t,
-                "elapsed_sec": time.time() - start_t,
-                "outlink_count": 0,
-                "content_hash": _content_hash(html) if html else None,
-                "content_path": content_path,
-                "error": error,
-            }
-
-            # Extract and enqueue discovered links
-            if status == "ok" and html:
-                links = self._extract_links(html)
-                meta["outlink_count"] = len(links)
-                for href in links:
-                    cand = _normalize(href, base=url)
-                    if not self._in_scope(cand):
-                        continue
-                    if cand in visited or cand in seen_this_run:
-                        continue
-                    frontier.append((cand, depth + 1, url))
-                    seen_this_run.add(cand)
-                    self._append_push(cand)
-
-            # Append metadata to file
-            with self.metadata_path.open("a", encoding="utf-8") as f:
-                f.write(json.dumps(meta, ensure_ascii=False) + "\n")
-
-            processed += 1
-            print(url)
-
-        print(f"Number of processed: {processed}")
-        return {"processed": processed, "visited_count": len(visited)}
+        return meta
 
     # Sleep for random interval between configured min/max
     def _jitter(self):
@@ -187,3 +131,82 @@ class Crawler:
         """Keep only site-specific links using the filter regex from config."""
         filt = self.site_cfg["regexes"]["href_filter_tesco"]
         return re.match(filt, url, flags=re.I) is not None
+
+    # main crawling function
+    def crawl(self):
+        start_url = self.site_cfg["root_url"]
+        max_pages = self.site_cfg["max_pages"]
+        visited = self._load_visited_set()
+
+        # Restore pending URLs from previous runs
+        frontier = self._replay_pushes(visited)
+
+        # Seed start URL if stack is empty
+        if not frontier:
+            su = _normalize(start_url)
+            self._append_push(su)
+            frontier = self._replay_pushes(visited)
+
+        processed = 0
+        seen_this_run = set(u for (u, _, _) in frontier)
+
+        # Main crawling loop: fetch pages until the frontier is empty or the limit is reached
+        while frontier and (max_pages is None or processed < max_pages):
+            num_already_visited = len(frontier)
+            if (processed % 20) == 0:
+                # Lightweight runtime logging
+                print(f"Number of STORED: {processed}")
+                print(f"Number of in-stack: {num_already_visited}")
+
+            url, depth, ref = frontier.popleft()
+            if url in visited:
+                continue  # Skip URLs already processed
+
+            start_t = time.time()
+            status, error = "ok", None
+            html = ""
+
+            self._jitter()  # Random delay to avoid aggressive crawling or bans
+            try:
+                html = self.fetcher.fetch_html(url)
+                if not html:
+                    status = "empty"  # Fetched but empty or invalid HTML
+            except Exception as e:
+                status = "error"
+                error = str(e)
+
+            # Extract links only if HTML was successfully fetched - mark visited even on ERROR
+            outlink_count = 0
+            if status == "ok" and html:
+                links = self._extract_links(html)
+                outlink_count = len(links)
+
+                for href in links:
+                    cand = _normalize(href, base=url)  # Convert to absolute URL
+                    if not self._in_scope(cand):
+                        continue  # Respect crawling domain/scope restrictions
+                    if cand in visited or cand in seen_this_run:
+                        continue  # Avoid duplicates or cycles within this run
+
+                    frontier.append((cand, depth + 1, url))
+                    seen_this_run.add(cand)
+                    self._append_push(cand)  # Optional hook (telemetry/debugging)
+
+            # Save HTML, mark visited, and write metadata in one unified call
+            self._save_html(
+                url=url,
+                html=html,
+                depth=depth,
+                ref=ref,
+                start_t=start_t,
+                status=status,
+                error=error,
+                visited=visited,
+                outlink_count=outlink_count,
+            )
+
+            processed += 1
+            print(url)  # Simple console progress indicator
+
+        print(f"Number of processed: {processed}")
+        return {"processed": processed, "visited_count": len(visited)}

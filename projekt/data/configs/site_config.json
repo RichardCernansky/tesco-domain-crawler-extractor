@@ -1,6 +1,6 @@
 {
   "site": "tesco",
-  "start_url": "https://www.tesco.com/groceries/en-GB",
+  "root_url": "https://www.tesco.com/groceries/en-GB",
   "max_pages": 1001,
   "regexes": {
     "body_regex": "<body\\b[^>]*>(.*?)</body\\s*>",

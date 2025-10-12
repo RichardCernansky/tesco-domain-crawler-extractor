@@ -9,6 +9,9 @@ minimal regex? regex najlepsie iba podla textu, pridat nutrition tabulku, hlavic
 testy
 
 
+add link texts to metadata
+
+
 REGEX NOTES:
 0. flags - I - case insensitive, S - . matches also '\n'
 1. PRICE REGEX

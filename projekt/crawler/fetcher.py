@@ -147,7 +147,7 @@ class Fetcher:
         if not self._cookies_accepted(d):
             self._accept_cookies(d)
 
-        WebDriverWait(d, self.app_cfg["driver_wait_def"]).until(
+        WebDriverWait(d, self.app_cfg["driver_load_timeout"]).until(
             lambda drv: drv.execute_script("return document.readyState") in ("interactive", "complete")
         )
         return d.page_source
