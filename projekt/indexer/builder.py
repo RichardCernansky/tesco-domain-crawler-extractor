@@ -1,8 +1,10 @@
 from collections import defaultdict, Counter
 from typing import List, Dict, Any
 from indexer.tokenizer import tokenize
+from indexer.index import idf
 import json
 import math
+
 
 class IndexBuilder:
     def __init__(self, app_cfg):
@@ -26,16 +28,13 @@ class IndexBuilder:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(obj, f, ensure_ascii=False)
 
-    @staticmethod
-    def idf(N, n0):
-        return math.log(N/n0)
 
     def find_term_doc(self, postings, term, did, N):
         term_query =  postings.get(term)
         for doc_id, tf in term_query[2:]:
             n0 = term_query[0]
             if doc_id == did:
-                return tf * self.idf(N, n0)
+                return tf * idf(N, n0)
 
     def build(self, docs: List[dict]) -> Dict[str, Any]:
         postings: Dict[str, list] = defaultdict(list)

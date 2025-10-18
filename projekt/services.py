@@ -33,6 +33,6 @@ def query(app_cfg: dict, mode, q, top_k):
     hits = index.search(mode, q, top_k)
     results = join_hits(hits, products_by_id)
     for r in results:
-        print(r["id"], f"{r['score']:.3f}", r.get("name", ""), r.get("brand", ""), r.get("category", ""))
+        print(f"Product ID: {r['id']}| ", f"Score: {r['score']:.3f}| ", r.get("name", ""), r.get("brand", ""), r.get("category", ""))
 
     return

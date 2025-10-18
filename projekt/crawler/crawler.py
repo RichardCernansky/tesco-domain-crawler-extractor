@@ -149,11 +149,12 @@ class Crawler:
             frontier = self._replay_pushes(visited)
 
         processed = 0
+        saved_now = 0
         seen_this_run = set(u for (u, _, _) in frontier)
 
         # Main crawling loop: fetch pages until the frontier is empty or the limit is reached
         # TODO: add while visited_before+saved_now <= 5000
-        while frontier and (max_pages is None or processed < max_pages):
+        while frontier and (max_pages is None or (len(visited) + saved_now) < max_pages):
             num_already_visited = len(frontier)
             if (processed % 20) == 0:
                 # Lightweight runtime logging
@@ -178,7 +179,6 @@ class Crawler:
                 error = str(e)
 
             # Extract links only if HTML was successfully fetched - mark visited even on ERROR
-            outlink_count = 0
             if status == "ok" and html:
                 links = self._extract_links(html)
                 outlink_count = len(links)
@@ -194,21 +194,23 @@ class Crawler:
                     seen_this_run.add(cand)
                     self._append_push(cand)  # Optional hook (telemetry/debugging)
 
-            # Save HTML, mark visited, and write metadata in one unified call
-            self._save_html(
-                url=url,
-                html=html,
-                depth=depth,
-                ref=ref,
-                start_t=start_t,
-                status=status,
-                error=error,
-                visited=visited,
-                outlink_count=outlink_count,
-            )
+                # Save HTML, mark visited, and write metadata in one unified call
+                self._save_html(
+                    url=url,
+                    html=html,
+                    depth=depth,
+                    ref=ref,
+                    start_t=start_t,
+                    status=status,
+                    error=error,
+                    visited=visited,
+                    outlink_count=outlink_count,
+                )
+                saved_now += 1
 
             processed += 1
             print(url)  # Simple console progress indicator
 
         print(f"Number of processed: {processed}")
+        print(f"Number of saved: {saved_now}")
         return {"processed": processed, "visited_count": len(visited)}

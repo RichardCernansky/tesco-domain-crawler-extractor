@@ -4,6 +4,10 @@ from typing import Dict, List, Tuple, Any
 from my_utils import load_jsonl
 from indexer.tokenizer import tokenize
 
+
+def idf(N, n0):
+    return math.log(N / n0)
+
 class Index:
     def __init__(self, app_cfg):
         self.app_cfg = app_cfg
@@ -20,15 +24,11 @@ class Index:
 
         return
 
-    @staticmethod
-    def idf(N, n0):
-        return math.log(N / n0)
-
     def score_idf(self, t_count, n0):
-        return t_count * self.idf(self.N, n0)
+        return t_count * idf(self.N, n0)
 
-    def score_idf_l2(self, t_count, l2, n0):
-        return t_count * self.idf(self.N, n0) / l2
+    def score_idf_l2(self, t_count, n0, l2):
+        return t_count * idf(self.N, n0) / l2 * 100
 
     def search(self, mode: str, query: str, topk: int) -> List[Tuple[int, float]]:
         tokens = tokenize(query)
