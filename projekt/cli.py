@@ -1,12 +1,18 @@
 import argparse, json
-from services.services import fetch_pages,extract_products
+from services import fetch_pages, extract_products, build_index, query
 
 
 def build_arg_parser():
     ap = argparse.ArgumentParser(prog="crawler")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    gp = sub.add_parser("fetch-pages", help="Crawl products from ndjson configs (one per line).")
-    ep = sub.add_parser("extract-products", help="Parse saved HTML files and emit NDJSON.")
+    c_fetch_pages = sub.add_parser("fetch-pages", help="Crawl products from ndjson configs (one per line).")
+    c_extract_products = sub.add_parser("extract-products", help="Parse saved HTML files and emit NDJSON.")
+    c_build_index = sub.add_parser("build-index", help="Build index.")
+
+    p_query = sub.add_parser("query")
+    p_query.add_argument("--mode", choices=["idf", "idf_l2"], required=True)
+    p_query.add_argument("--topk", type=int, required=True)
+    p_query.add_argument("terms", nargs="+", metavar="terms", help="Use at least one query token.")
 
     return ap
 
@@ -24,11 +30,16 @@ def main():
 
     if args.cmd == "fetch-pages":
         fetch_pages(site_cfg, app_cfg)
-
     elif args.cmd == "extract-products":
         extract_products(site_cfg, app_cfg)
         print("[OK] products written to", "data/products.ndjson")
-
+    elif args.cmd == "build-index":
+        build_index(app_cfg)
+    elif args.cmd == "query":
+        mode = args.mode
+        q = " ".join(args.terms)
+        top_k = int(args.topk)
+        query(app_cfg, mode, q, top_k)
 
 if __name__ == "__main__":
     main()

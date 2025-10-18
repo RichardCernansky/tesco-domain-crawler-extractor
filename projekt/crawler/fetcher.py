@@ -82,7 +82,6 @@ class Fetcher:
     # ---------- robots.txt ----------
 
     def _get_rp(self, url: str) -> robotparser.RobotFileParser:
-        """Cache & return a RobotFileParser for the host, using the same UA as the driver."""
         parsed = urlparse(url)
         netloc = parsed.netloc
         now = time.time()
@@ -95,10 +94,11 @@ class Fetcher:
         rp.set_url(robots_url)
         try:
             headers = {"User-Agent": self.current_user_agent or "Mozilla/5.0"}
-            r = requests.get(robots_url, headers=headers, timeout=5)
+            timeout_s = random.uniform(3, 5)
+            r = requests.get(robots_url, headers=headers, timeout=timeout_s)
             rp.parse([] if r.status_code >= 400 else r.text.splitlines())
         except Exception:
-            rp.parse([])  # fallback: allow nothing if fetch failed
+            rp.parse([])
 
         ROBOTS_CACHE[netloc] = rp
         ROBOTS_TIME[netloc] = now

@@ -8,6 +8,7 @@ from .fetcher import Fetcher  # your Selenium-based fetcher
 
 # Normalize and resolve a URL (lowercase scheme/domain, drop fragments)
 def _normalize(url: str, base: str | None = None) -> str:
+    # Resolves relative URLs against base, lowercases scheme/host, drops fragments, ensures '/' when path missing, preserves query; does NOT remove default ports, reorder query params, or change percent-encoding.
     if base:
         url = urljoin(base, url)
     s = urlsplit(url)
@@ -151,6 +152,7 @@ class Crawler:
         seen_this_run = set(u for (u, _, _) in frontier)
 
         # Main crawling loop: fetch pages until the frontier is empty or the limit is reached
+        # TODO: add while visited_before+saved_now <= 5000
         while frontier and (max_pages is None or processed < max_pages):
             num_already_visited = len(frontier)
             if (processed % 20) == 0:

@@ -118,6 +118,7 @@ class Extractor:
         storage = sorted(storage_dir.glob("*.html"))
         total = len(storage)
 
+        product_id = 1
         for i, html_path in enumerate(storage):
             if i % 100 == 0:
                 print(f"[{i}/{total}] processed so far | added={len(products)} | last={html_path.name}", flush=True)
@@ -131,6 +132,8 @@ class Extractor:
                 required = ("name",  "price")
                 if all(parsed.get(k) is not None for k in required):
                     parsed["source_file"] = str(html_path)
+                    parsed["product_id"] = product_id
+                    product_id += 1
                     products.append(parsed)
             except Exception:
                 print(f"ERROR in processing file {html_path.name}", flush=True)
@@ -142,7 +145,7 @@ class Extractor:
         return products
 
     def save_products(self, products):
-        out_path = self.app_cfg["products_out_path"]
+        out_path = self.app_cfg["products_path"]
         p = Path(out_path)
         mode = "w"
         with p.open(mode, encoding="utf-8") as f:
