@@ -73,7 +73,6 @@ def load_jsonl(path: str) -> List[dict]:
             docs.append(json.loads(line))
     return docs
 
-
 def build_products_by_id(products: List[dict]) -> Dict[int, dict]:
     out = {}
     for p in products:

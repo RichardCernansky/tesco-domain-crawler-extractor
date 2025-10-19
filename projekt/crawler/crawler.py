@@ -154,11 +154,12 @@ class Crawler:
 
         # Main crawling loop: fetch pages until the frontier is empty or the limit is reached
         # TODO: add while visited_before+saved_now <= 5000
-        while frontier and (max_pages is None or (len(visited) + saved_now) < max_pages):
+        # while frontier and (max_pages is None or (len(visited) + saved_now) < max_pages):
+        while frontier and (max_pages is None or processed < max_pages):
             num_already_visited = len(frontier)
             if (processed % 20) == 0:
                 # Lightweight runtime logging
-                print(f"Number of STORED: {processed}")
+                print(f"Number of stored this run: {processed}")
                 print(f"Number of in-stack: {num_already_visited}")
 
             url, depth, ref = frontier.popleft()

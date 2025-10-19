@@ -28,18 +28,21 @@ class Extractor:
         return ingredients
 
     def get_price_and_currency(self, html, rx, fl):
-        price_m = re.search(rx["price_regex"], html)
-        cur, price = (None, None)
-        unit_bundle = None
-        if price_m:
-            gcurr, gprice, gunit_price, gper_quantity, gper_unit = 1,2,4,5,6
-            cur = price_m.group(gcurr).strip()
-            price = float(price_m.group(gprice))
-            unit_price = float(price_m.group(gunit_price))
-            unit_quant = float(price_m.group(gper_quantity))
-            unit = price_m.group(gper_unit)
-            unit_bundle = {"price": unit_price, "quantity": unit_quant, "unit": unit}
-        return (cur, price, unit_bundle)
+        # Try each regex pattern in order
+        for key, price_regex in rx["price_regexes"].items():
+            price_m = re.search(price_regex, html)
+            if price_m:
+                # Capture the currency symbol, main price, and unit price
+                cur = '£'  # Assuming the currency is always GBP, as per the example
+                price = price_m.group(1)  # The main price, e.g., 1.99
+                # unit_price =price_m.group(2).split('/')[0]  # The unit price (e.g., 7.96 from 7.96/kg)
+                # unit_quant = None  # You may not need to capture this unless it's given
+                # unit = price_m.group(2).split('/')[1]  # The unit, e.g., kg from 7.96/kg
+                # unit_bundle = {"price": unit_price, "unit": unit}
+
+                return cur, price, None
+
+        return None, None, None  # Return None if no match is found
 
     def get_brand(self, html, rx, fl):
         #brand
@@ -118,6 +121,7 @@ class Extractor:
         storage = sorted(storage_dir.glob("*.html"))
         total = len(storage)
 
+        import traceback
         product_id = 1
         for i, html_path in enumerate(storage):
             if i % 100 == 0:
@@ -129,7 +133,7 @@ class Extractor:
                 body = m.group(1) if m else html  # fallback if no <body> match
                 # parse using the same regexes under the "product" key
                 parsed = self.parse_product_html(body, rx)
-                required = ("name",  "price")
+                required = ("name", "price" )
                 if all(parsed.get(k) is not None for k in required):
                     parsed["source_file"] = str(html_path)
                     parsed["product_id"] = product_id
@@ -137,6 +141,7 @@ class Extractor:
                     products.append(parsed)
             except Exception:
                 print(f"ERROR in processing file {html_path.name}", flush=True)
+                traceback.print_exc()
                 continue
 
         # optional final summary

@@ -30,13 +30,7 @@ class Fetcher:
 
     def _pick_user_agent(self) -> str:
         """Pick a random UA from config or fallback pool."""
-        pool = self.app_cfg.get("user_agents") or [
-            # sensible desktop Chromium UAs as fallback
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edg/126.0.0.0 Chrome/126.0.0.0 Safari/537.36",
-        ]
+        pool = self.app_cfg.get("user_agents")
         return random.choice(pool).strip()
 
     def _create_driver(self, profile_dir: str | None = None):
