@@ -15179,3 +15179,8 @@ https://www.tesco.com/groceries/en-GB/products/305434072
 https://www.tesco.com/groceries/en-GB/products/295226921
 https://www.tesco.com/groceries/en-GB/products/305050053
 https://www.tesco.com/groceries/en-GB/products/284775990
+https://www.tesco.com/groceries/en-GB/shop/pets/cat-food-and-accessories/all
+https://www.tesco.com/groceries/en-GB/shop/pets/cat-food-and-accessories/cat-treats-and-cat-milk/all
+https://www.tesco.com/groceries/en-GB/shop/pets/all?facetsArgs=brands%3ADREAMIES&amp;refPage=pdp
+https://www.tesco.com/groceries/en-GB/promotions/94835046
+https://www.tesco.com/groceries/en-GB/shop/pets/all?facetsArgs=brands%3Afelix&amp;refPage=pdp

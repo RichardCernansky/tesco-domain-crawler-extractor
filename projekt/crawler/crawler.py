@@ -173,7 +173,7 @@ class Crawler:
             self._jitter()  # Random delay to avoid aggressive crawling or bans
             try:
                 # Rotate user-agent and proxy before fetching a URL
-                # fetcher.rotate_user_agent()  # Change the user-agent
+                self.fetcher.rotate_user_agent()  # Change the user-agent
                 # fetcher.rotate_proxy()  # Change the proxy
 
                 html = self.fetcher.fetch_html(url)

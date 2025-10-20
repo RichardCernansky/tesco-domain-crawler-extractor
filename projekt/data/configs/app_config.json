@@ -1,6 +1,6 @@
 {
   "storage_path": "data/storage",
-  "stack_path": "data/logs/stack_products.txt",
+  "stack_path": "data/logs/stack1.txt",
   "visited_path": "data/logs/visited.txt",
   "metadata_path": "data/logs/metadata.ndjson",
   "products_path": "data/products.ndjson",

@@ -1,7 +1,7 @@
 {
   "site": "tesco",
   "root_url": "https://www.tesco.com/groceries/en-GB/shop/fresh-food/all",
-  "max_pages": 5000,
+  "max_pages": 2500,
   "regexes": {
     "body_regex": "<body\\b[^>]*>(.*?)</body\\s*>",
     "href_regex": "href=[\"']([^\"']+)[\"']",
