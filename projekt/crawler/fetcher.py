@@ -7,6 +7,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+import undetected_chromedriver.v2 as uc  # Import the correct version of undetected_chromedriver
+from undetected_chromedriver.v2 import Chrome, ChromeOptions
+
 # robots.txt cache (per-host)
 ROBOTS_CACHE, ROBOTS_TIME = {}, {}
 ROBOTS_TTL = 60 * 60  # seconds
@@ -33,35 +36,10 @@ class Fetcher:
         pool = self.app_cfg.get("user_agents")
         return random.choice(pool).strip()
 
-    def _create_driver(self, profile_dir: str | None = None):
-        import undetected_chromedriver as uc
-
-        ua = self._pick_user_agent()
-        opts = uc.ChromeOptions()
-        opts.add_argument("--lang=en-GB")
-        opts.add_argument("--window-size=1280,2000")
-        opts.add_argument("--disable-blink-features=AutomationControlled")
-        opts.add_argument("--no-first-run")
-        opts.add_argument("--no-default-browser-check")
-        opts.add_argument(f"--user-agent={ua}")  # UA at startup
-
-        if profile_dir:
-            opts.add_argument(f"--user-data-dir={profile_dir}")
-
-        driver = uc.Chrome(options=opts)
-        # ---- timeouts on the driver ----
-        driver.set_page_load_timeout(self.app_cfg.get("page_load_timeout"))
-        driver.set_script_timeout(self.app_cfg.get("script_timeout"))
-
-        # Also override via CDP so subrequests match.
-        try:
-            driver.execute_cdp_cmd("Network.enable", {})
-            driver.execute_cdp_cmd("Network.setUserAgentOverride", {"userAgent": ua})
-        except Exception:
-            pass
-
-        self.current_user_agent = ua
-        return driver
+    def _pick_proxy(self) -> str:
+        """Pick a random proxy from the list."""
+        proxy_pool = self.app_cfg.get("proxy_list")
+        return random.choice(proxy_pool).strip()
 
     def rotate_user_agent(self) -> bool:
         """Rotate UA on the same driver via CDP (does not recreate the driver)."""
@@ -69,9 +47,70 @@ class Fetcher:
         try:
             self.driver.execute_cdp_cmd("Network.setUserAgentOverride", {"userAgent": ua})
             self.current_user_agent = ua
+            print(f"User-Agent rotated to: {ua}")
             return True
         except Exception:
             return False
+
+    def _set_proxy(self, proxy):
+
+        """Set the proxy on the Chrome driver."""
+        options = ChromeOptions()
+        options.add_argument(f'--proxy-server={proxy}')
+        self.driver = Chrome(options=options)
+
+    def rotate_proxy(self):
+        """Rotate the proxy by restarting the driver."""
+        proxy = self._pick_proxy()  # Pick a random proxy from the list
+        try:
+            # Set a new proxy by restarting the driver with the new proxy
+            if self.driver:
+                self.driver.quit()  # Quit the previous driver instance
+
+            self._set_proxy(proxy)
+            print(f"Proxy rotated to: {proxy}")
+            return True
+        except Exception as e:
+            print(f"Failed to rotate proxy: {e}")
+            return False
+
+    def _create_driver(self, profile_dir: str | None = None):
+        import undetected_chromedriver.v2 as uc  # Correct import for undetected_chromedriver v2
+
+        ua = self._pick_user_agent()  # Pick a random user agent from the pool
+        opts = uc.ChromeOptions()  # Set Chrome options
+
+        opts.add_argument("--lang=en-GB")
+        opts.add_argument("--window-size=1280,2000")
+        opts.add_argument("--disable-blink-features=AutomationControlled")  # Avoid automation detection
+        opts.add_argument("--no-first-run")
+        opts.add_argument("--no-default-browser-check")
+        opts.add_argument(f"--user-agent={ua}")  # Set the user-agent at startup
+
+        # Add profile directory if provided
+        if profile_dir:
+            opts.add_argument(f"--user-data-dir={profile_dir}")  # Use a specific user profile
+
+        # Do not add --headless argument, no headless mode will be used
+        # opts.add_argument("--headless")  # Removed headless mode
+
+        # Initialize Chrome with undetected_chromedriver
+        driver = uc.Chrome(options=opts)  # Automatically handles chromedriver path
+
+        # Set timeouts for the driver
+        driver.set_page_load_timeout(self.app_cfg.get("page_load_timeout"))
+        driver.set_script_timeout(self.app_cfg.get("script_timeout"))
+
+        # Also override the user-agent via CDP (for network subrequests)
+        try:
+            driver.execute_cdp_cmd("Network.enable", {})
+            driver.execute_cdp_cmd("Network.setUserAgentOverride", {"userAgent": ua})
+        except Exception:
+            pass
+
+        # Store the current user agent
+        self.current_user_agent = ua
+        return driver  # Return the created driver
 
     # ---------- robots.txt ----------
 

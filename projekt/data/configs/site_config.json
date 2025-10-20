@@ -11,10 +11,9 @@
 
     "price_regexes":{
   "price_regex": "Reviews</a>.{500,1000}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?",
-  "price_regex_no_ratings": "No ratings yet<.{0,500}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?",
-  "price_regex_aldi": "Reviews</a>.{5000,5500}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?"
+  "price_regex_no_ratings": "No ratings yet<.{200,700}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?",
+  "price_regex_aldi": "Reviews</a>.{4000,6000}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?"
 },
-
       "brand_regex": ">\\s*View all\\s+[^<]*<(?:(?!>\\s*View all\\s)[\\s\\S])*?>\\s*View all\\s+([^<]+?)\\s*<",
     "category_regex": ">\\s*View all\\s+([^<]+?)\\s*<",
     "name_regex": "pdp-product-title[\"'][^>]*>\\s*([^<]+?)\\s*</h1>",

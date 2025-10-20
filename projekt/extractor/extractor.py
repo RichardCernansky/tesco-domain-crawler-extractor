@@ -133,7 +133,7 @@ class Extractor:
                 body = m.group(1) if m else html  # fallback if no <body> match
                 # parse using the same regexes under the "product" key
                 parsed = self.parse_product_html(body, rx)
-                required = ("name", "price" )
+                required = ("name", "price")
                 if all(parsed.get(k) is not None for k in required):
                     parsed["source_file"] = str(html_path)
                     parsed["product_id"] = product_id
