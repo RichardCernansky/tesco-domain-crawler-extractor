@@ -1,6 +1,6 @@
 {
   "storage_path": "data/storage",
-  "stack_path": "data/logs/stack.txt",
+  "stack_path": "data/logs/stack_products.txt",
   "visited_path": "data/logs/visited.txt",
   "metadata_path": "data/logs/metadata.ndjson",
   "products_path": "data/products.ndjson",
@@ -14,7 +14,7 @@
   "sleep_min": 0.8,
   "sleep_max": 2.5,
 
-  "uc_profile": "trxkb",
+  "uc_profile": "asdafg",
   "continue_from_stack": false,
   "user_agents": [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0",
@@ -30,19 +30,19 @@
     "Mozilla/5.0 (Linux; Android 14; SM-G996B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/25.0 Chrome/140.0.0.0 Mobile Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) OPR/110.0.0.0 Chrome/140.0.0.0 Safari/537.36"
 ],
-  "proxy_list": [
-    "http://198.187.28.220:8080",
-    "http://72.10.160.90:1237",
-    "http://213.142.156.97:80",
-    "http://139.59.1.14:80",
-    "http://159.203.61.169:3128",
-    "http://198.199.86.11:80",
-    "http://133.18.234.13:80",
-    "http://32.223.6.94:80",
-    "http://46.47.197.210:3128",
-    "http://190.58.248.86:80",
-    "http://90.162.35.34:80",
-    "http://35.197.89.213:80",
-    "http://188.40.57.101:80"
+    "proxy_rotate_after_pages": 5,
+    "ephemeral_profile": true,
+
+
+  "proxies": [
+    "gate.nodemaven.com:8080:richard_cernansky3_gmail_com-country-any-sid-fd4e135d8d9e4-filter-medium:wltchon88g",
+    "gate.nodemaven.com:8080:richard_cernansky3_gmail_com-country-any-sid-8c9c2990bb154-filter-medium:wltchon88g",
+    "gate.nodemaven.com:8080:richard_cernansky3_gmail_com-country-any-sid-7f86effde1034-filter-medium:wltchon88g",
+    "gate.nodemaven.com:8080:richard_cernansky3_gmail_com-country-any-sid-3510cd4395e54-filter-medium:wltchon88g",
+    "gate.nodemaven.com:8080:richard_cernansky3_gmail_com-country-any-sid-70a7ce3ffb174-filter-medium:wltchon88g"
   ]
+
+
 }
+
+

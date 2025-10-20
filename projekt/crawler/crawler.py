@@ -184,7 +184,10 @@ class Crawler:
                 error = str(e)
 
             # Extract links only if HTML was successfully fetched - mark visited even on ERROR
+            print(url)  # Simple console progress indicator
+            outlink_count = 0
             if status == "ok" and html:
+                print("Saved.")  # Simple console progress indicator
                 links = self._extract_links(html)
                 outlink_count = len(links)
 
@@ -198,24 +201,24 @@ class Crawler:
                     frontier.append((cand, depth + 1, url))
                     seen_this_run.add(cand)
                     self._append_push(cand)  # Optional hook (telemetry/debugging)
+                    saved_now += 1
 
-                # Save HTML, mark visited, and write metadata in one unified call
-                self._save_html(
-                    url=url,
-                    html=html,
-                    depth=depth,
-                    ref=ref,
-                    start_t=start_t,
-                    status=status,
-                    error=error,
-                    visited=visited,
-                    outlink_count=outlink_count,
-                )
-                saved_now += 1
+            # Save HTML, mark visited, and write metadata in one unified call
+            self._save_html(
+                url=url,
+                html=html,
+                depth=depth,
+                ref=ref,
+                start_t=start_t,
+                status=status,
+                error=error,
+                visited=visited,
+                outlink_count=outlink_count,
+            )
+
 
             processed += 1
-            print(url)  # Simple console progress indicator
 
-        print(f"Number of processed: {processed}")
-        print(f"Number of saved: {saved_now}")
+        print(f"Number of processed this run: {processed}")
+        print(f"Number of saved this run: {saved_now}")
         return {"processed": processed, "visited_count": len(visited)}
