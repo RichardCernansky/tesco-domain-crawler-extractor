@@ -1,6 +1,6 @@
 {
   "storage_path": "data/storage",
-  "stack_path": "data/logs/stack1.txt",
+  "stack_path": "data/logs/stack.txt",
   "visited_path": "data/logs/visited.txt",
   "metadata_path": "data/logs/metadata.ndjson",
   "products_path": "data/products.ndjson",
@@ -14,7 +14,7 @@
   "sleep_min": 0.8,
   "sleep_max": 2.5,
 
-  "uc_profile": "heureka453",
+  "uc_profile": "modra365",
   "continue_from_stack": false,
   "user_agents": [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0",
