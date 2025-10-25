@@ -2,6 +2,7 @@ from crawler.crawler import Crawler
 from extractor.extractor import Extractor
 from indexer.builder import IndexBuilder
 from indexer.index import Index
+from stats.statistician import Statistician
 from my_utils import load_jsonl, build_products_by_id, join_hits
 
 
@@ -35,4 +36,9 @@ def query(app_cfg: dict, mode, q, top_k):
     for r in results:
         print(f"Product ID: {r['id']}| ", f"Score: {r['score']:.3f}| ", r.get("name", ""), r.get("brand", ""), r.get("category", ""))
 
+    return
+
+def stats(app_config: dict):
+    sr = Statistician(app_config)
+    sr.get_stats()
     return

@@ -6,20 +6,23 @@
     "body_regex": "<body\\b[^>]*>(.*?)</body\\s*>",
     "href_regex": "href=[\"']([^\"']+)[\"']",
     "href_filter_tesco": "^https?://(?:www\\.)?tesco\\.com/groceries/en-GB/",
-
     "ingredients_regex": "<h3[^>]*>\\s*Ingredients\\s*</h3>\\s*<div[^>]*>(.*?)</div>",
-
     "price_regexes":{
-  "price_regex": "Reviews</a>.{500,1000}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?",
-      "price_regex_aldi": "Reviews</a>.{4000,6000}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?",
-  "price_regex_no_ratings": "No ratings yet<.{200,700}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?",
-      "price_regex_size": "Size chart<.{1000,1500}£([\\d\\.]+)(?=.{0,50}£([\\d\\.]+/[a-zA-Z]+))?"
+      "reviews_regex": "Reviews</a>[\\s\\S]{500,1000}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))",
+      "review_regex":  "Review</a>[\\s\\S]{500,1000}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))",
+      "reviews_aldi":  "Reviews</a>[\\s\\S]{4000,6000}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))",
+      "review_aldi":   "Review</a>[\\s\\S]{4000,6000}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))",
+      "no_ratings":    "No ratings yet<[\\s\\S]{200,1200}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))",
+      "price_regex_size": "Size chart<[\\s\\S]{1000,1500}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))",
+      "no_ratings_wide":  "No ratings yet<[\\s\\S]{6000,6500}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))"
     },
       "brand_regex": ">\\s*View all\\s+[^<]*<(?:(?!>\\s*View all\\s)[\\s\\S])*?>\\s*View all\\s+([^<]+?)\\s*<",
     "category_regex": ">\\s*View all\\s+([^<]+?)\\s*<",
     "name_regex": "pdp-product-title[\"'][^>]*>\\s*([^<]+?)\\s*</h1>",
-    "description_regex": "<h3[^>]*>\\s*Description\\s*</h3>\\s*(.*?)\\s*(?=<h3[^>]*>\\s*Ingredients\\b)",
+   "description_regex": "<h3[^>]*>\\s*Description\\s*</h3>\\s*([\\s\\S]*?)\\s*(?=(?:<h3[^>]*>|\\Z))",
+
     "description_lines_regex": "<span[^>]*>(.*?)</span>",
+    "highlights_lines_regex": "Highlights\\s*</h3>\\s*(.*?)(?=<h3[^>]*>\\s*Description)",
 
     "nutrition_regexes": {
       "energy": "Nutrition[\\s\\S]*?Energy\\s*</th>\\s*<td>\\s*([^<]+?)\\s*</td>",

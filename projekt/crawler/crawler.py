@@ -187,7 +187,6 @@ class Crawler:
             print(url)  # Simple console progress indicator
             outlink_count = 0
             if status == "ok" and html:
-                print("Saved.")  # Simple console progress indicator
                 links = self._extract_links(html)
                 outlink_count = len(links)
 
