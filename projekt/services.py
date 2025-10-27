@@ -33,8 +33,8 @@ def query(app_cfg: dict, mode, q, top_k):
     products_by_id = build_products_by_id(products)
     hits = index.search(mode, q, top_k)
     results = join_hits(hits, products_by_id)
-    for r in results:
-        print(f"Product ID: {r['id']}| ", f"Score: {r['score']:.3f}| ", r.get("name", ""), r.get("brand", ""), r.get("category", ""))
+    for i,r in enumerate(results):
+        print(f"{i+1}. Product ID: {r['id']}| Score: {r['score']:.3f}| {r.get('name', '')} | {r.get('brand', '')} | {r.get('category', '')}")
 
     return
 

@@ -6,7 +6,7 @@
     "body_regex": "<body\\b[^>]*>(.*?)</body\\s*>",
     "href_regex": "href=[\"']([^\"']+)[\"']",
     "href_filter_tesco": "^https?://(?:www\\.)?tesco\\.com/groceries/en-GB/",
-    "ingredients_regex": "<h3[^>]*>\\s*Ingredients\\s*</h3>\\s*<div[^>]*>(.*?)</div>",
+    "ingredients_regex": ">\\s*Ingredients\\s*</h3>\\s*<div[^>]*>(.*?)</div>",
     "price_regexes":{
       "reviews_regex": "Reviews</a>[\\s\\S]{500,1000}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))",
       "review_regex":  "Review</a>[\\s\\S]{500,1000}£([\\d\\.]+)(?:.{0,500}£([\\d\\.]+/[^<]+))",

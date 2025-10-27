@@ -36,4 +36,21 @@ Group 2: capture the numeric price: digits, optional decimal point + 1–2 digit
 <
 Require that we’re still before the next tag start, keeping the match inside the same text node.
 
+
+regexe viac regexov
+titoken ibe v tom counteri?
+
+
 2.
+
+
+
+python cli.py query --mode idf --topk 10 rowntrees fruit pastilles gums jelly tots vegan artificial colours
+
+python cli.py query --mode idf --topk 10 haribo goldbears giant strawbs fruitilicious gummy bears vegetarian gelatine sweets
+
+python cli.py query --mode idf --topk 10 kinder chocolate bars maltesers pouch cadbury dairy milk creamy cocoa
+
+python cli.py query --mode idf --topk 10 halloween led pumpkin lantern string lights maple garland wreath battery
+
+python cli.py query --mode idf --topk 10 costume halloween grim reaper witch pumpkin clown mask kids adult

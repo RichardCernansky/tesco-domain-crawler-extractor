@@ -6,6 +6,8 @@
   "products_path": "data/products.ndjson",
   "eval_report_path": "data/eval_report.ndjson",
   "index_path": "data/index/index.json",
+  "tiktoken_encoding": "o200k_base",
+
 
   "time_out": 2,
   "page_load_timeout": 15,
