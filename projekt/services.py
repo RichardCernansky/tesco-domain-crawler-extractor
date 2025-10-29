@@ -4,7 +4,7 @@ from indexer.builder import IndexBuilder
 from indexer.index import Index
 from stats.statistician import Statistician
 from my_utils import load_jsonl, build_products_by_id, join_hits
-
+from stats.tester import Tester
 
 def fetch_pages(site_cfg: dict, app_cfg: dict):
     crawler = Crawler(site_cfg, app_cfg)
@@ -41,4 +41,11 @@ def query(app_cfg: dict, mode, q, top_k):
 def stats(app_config: dict):
     sr = Statistician(app_config)
     sr.get_stats()
+    return
+
+def test(site_config:dict, app_config:dict):
+    extractor = Extractor(site_config, app_config)
+    tester = Tester(extractor, app_config)
+    tester.test()
+
     return

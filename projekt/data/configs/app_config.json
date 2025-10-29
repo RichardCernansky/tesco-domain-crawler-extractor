@@ -6,6 +6,7 @@
   "products_path": "data/products.ndjson",
   "eval_report_path": "data/eval_report.ndjson",
   "index_path": "data/index/index.json",
+  "unit_tests_path": "data/unit_tests.ndjson",
   "tiktoken_encoding": "o200k_base",
 
 

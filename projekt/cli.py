@@ -1,5 +1,5 @@
 import argparse, json
-from services import fetch_pages, extract_products, build_index, query, stats
+from services import fetch_pages, extract_products, build_index, query, stats, test
 
 
 def build_arg_parser():
@@ -9,6 +9,7 @@ def build_arg_parser():
     c_extract_products = sub.add_parser("extract-products", help="Parse saved HTML files and emit NDJSON.")
     c_build_index = sub.add_parser("build-index", help="Build index.")
     c_stats = sub.add_parser("stats", help="Build index.")
+    c_test = sub.add_parser("test", help="Build index.")
 
     p_query = sub.add_parser("query")
     p_query.add_argument("--mode", choices=["idf", "idf_l2"], required=True)
@@ -43,6 +44,9 @@ def main():
         query(app_cfg, mode, q, top_k)
     elif args.cmd == "stats":
         stats(app_cfg)
+    elif args.cmd == "test":
+        test(site_cfg,app_cfg)
+
 
 if __name__ == "__main__":
     main()
