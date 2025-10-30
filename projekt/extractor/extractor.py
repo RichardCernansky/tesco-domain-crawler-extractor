@@ -10,7 +10,7 @@ class Extractor:
         self.site_cfg = site_cfg  # site-specific settings, including regex bundle
         self.app_cfg = app_cfg    # app-level settings, output paths
 
-        return  # explicit no-op constructor beyond assignments
+        return
 
     def get_name(self, html, rx):
         name_m = re.search(rx["name_regex"], html)  # extract product name via configured regex
