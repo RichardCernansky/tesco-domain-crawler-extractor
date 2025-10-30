@@ -47,5 +47,4 @@ def test(site_config:dict, app_config:dict):
     extractor = Extractor(site_config, app_config)
     tester = Tester(extractor, app_config)
     tester.test()
-
     return

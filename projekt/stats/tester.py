@@ -75,7 +75,7 @@ class Tester:
         total = len(tests)
         passed = {}  # field -> count
 
-        for rec in tests:  # ONE LOOP
+        for rec in tests:
             src = rec["source_file"]
             html = Path(src).read_text(encoding="utf-8", errors="ignore")
             m = self._body_re.search(html)
@@ -89,7 +89,7 @@ class Tester:
                     passed[f] = passed.get(f, 0) + 1
 
         # print stats for every field discovered from extracted entities
-        print(f"Unit tests: {total} (alphabetical order)")
+        print(f"Unit tests for REGEXES: {total} (alphabetical order)")
         for f in sorted(self.fields):
             print(f"{f}: {passed.get(f, 0)}/{total}")
 
