@@ -3,7 +3,7 @@ from services import fetch_pages, extract_products, build_index, query, stats, t
 
 
 def build_arg_parser():
-    ap = argparse.ArgumentParser(prog="crawler")
+    ap = argparse.ArgumentParser(prog="client")
     sub = ap.add_subparsers(dest="cmd", required=True)
     c_fetch_pages = sub.add_parser("fetch-pages", help="Crawl products from ndjson configs (one per line).")
     c_extract_products = sub.add_parser("extract-products", help="Parse saved HTML files and emit NDJSON.")

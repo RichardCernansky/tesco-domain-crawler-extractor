@@ -8,8 +8,8 @@ class Extractor:
 
     def __init__(self, site_cfg, app_cfg):
         self.site_cfg = site_cfg  # site-specific settings, including regex bundle
-        self.app_cfg = app_cfg    # app-level settings, e.g., output paths
-        # add body regex  # placeholder: body <regex> expected in site_cfg["regexes"]["body_regex"]
+        self.app_cfg = app_cfg    # app-level settings, output paths
+
         return  # explicit no-op constructor beyond assignments
 
     def get_name(self, html, rx):
@@ -27,21 +27,19 @@ class Extractor:
         return ingredients  # list or None
 
     def get_price_and_currency(self, html, rx):
-        # Try each regex pattern in order  # supports multiple site price patterns
         for key, price_regex in rx["price_regexes"].items():
             price_m = re.search(price_regex, html)  # attempt one pattern
             if price_m:
-                # Capture the currency symbol, main price, and unit price  # relies on capture groups (1) and (2)
-                cur = '£'  # Assuming the currency is always GBP, as per the example  # constant currency assumption
-                price = price_m.group(1)  # The main price, e.g., 1.99
-                unit_price = price_m.group(2).split('/')[0]  # The unit price (e.g., "7.96" from "7.96/kg")
-                unit = price_m.group(2).split('/')[1]  # The unit, e.g., "kg" from "7.96/kg"
-                unit_bundle = {"price": unit_price, "unit": unit}  # structured unit info for downstream use
+                # Capture the currency symbol, main price, and unit price
+                cur = '£'  # Assuming the currency is always GBP
+                price = price_m.group(1)
+                unit_price = price_m.group(2).split('/')[0]
+                unit = price_m.group(2).split('/')[1]
+                unit_bundle = {"price": unit_price, "unit": unit}
                 return cur, price, unit_bundle  # early return on first successful match
         return None, None, None  # Return None if no match is found  # signals missing price
 
     def get_brand(self, html, rx):
-        # brand  # brand extracted via configured regex
         brand = None
         b1 = re.search(rx["brand_regex"], html)  # attempt brand capture
         if b1:
@@ -71,7 +69,7 @@ class Extractor:
 
     def get_nutrition_table(self, html, rx):
         nut_rx = rx.get("nutrition_regexes")  # dict of nutrient -> regex pattern
-        out = {}  # map nutrient keys to values (strings or None)
+        out = {}  # map nutrient keys to values
         for key, pattern in nut_rx.items():
             m = re.search(pattern, html)  # try to capture each nutrient field
             if m:
@@ -82,7 +80,6 @@ class Extractor:
         return out  # complete nutrition dict with possible Nones
 
     def get_highlights(self, html, rx):
-        # Prefer site-configured block regex; otherwise, take everything between the sections.  # locate UL block
         block_re = rx.get("highlights_lines_regex")
         m = re.search(block_re, html)  # find the highlights container
         if not m:
@@ -99,15 +96,14 @@ class Extractor:
         return " ".join(items) if items else None  # single string of highlights or None
 
     def parse_product_html(self, html: str, rx: dict, html_name):
-        # name  # orchestrates field extraction from a single HTML body
         name = self.get_name(html, rx)  # product title
         ingredients = self.get_ingredients(html, rx)  # list or None
         currency, price, unit_bundle = self.get_price_and_currency(html, rx)  # price triple
-        brand = self.get_brand(html, rx)  # brand string
-        category = self.get_category(html, rx)  # category/breadcrumb leaf
-        description = self.get_description(html, rx)  # long text
-        nutrition_table = self.get_nutrition_table(html, rx)  # dict of nutrient values
-        highlights = self.get_highlights(html, rx)  # space-joined bullet points
+        brand = self.get_brand(html, rx)
+        category = self.get_category(html, rx)
+        description = self.get_description(html, rx)
+        nutrition_table = self.get_nutrition_table(html, rx)
+        highlights = self.get_highlights(html, rx)
         return {
             "name": name,
             "brand": brand,
@@ -123,7 +119,7 @@ class Extractor:
 
     def _dedupe_key(self, rec, field):
         """Normalize a field value into a stable, comparable key for deduping."""
-        v = rec.get(field)  # access chosen field (e.g., "name")
+        v = rec.get(field)  # access chosen field ("name")
         if v is None:
             return None  # cannot dedupe without a value
         if isinstance(v, str):
@@ -136,18 +132,17 @@ class Extractor:
         products = []  # accumulator for extracted product dicts
 
         # site-level regex bundle
-        rx = self.site_cfg["regexes"]  # expect all field patterns under this key
-        fl = flags(rx.get("flags"))  # uses your my_utils.flags -> e.g., I|S  # compile options from config
+        rx = self.site_cfg["regexes"]
+        fl = flags(rx.get("flags"))
         body_re = re.compile(rx["body_regex"], fl)  # precompile <body> (or equivalent) extractor
 
         storage_dir = Path("data/storage")  # source directory with raw HTML files
-        storage = sorted(storage_dir.glob("*.html"))  # deterministic order for reproducibility
-        total = len(storage)  # total files to process
+        storage = sorted(storage_dir.glob("*.html"))
+        total = len(storage)
 
         import traceback
-        product_id = 1  # incremental product ID assigned in reading order
-        seen = set()  # set of normalized keys we've already accepted (for deduplication)
-
+        product_id = 1
+        seen = set()  # set of normalized keys we've already accepted
         for i, html_path in enumerate(storage):
             if i % 100 == 0:
                 print(f"[{i}/{total}] processed so far | added={len(products)} | last={html_path.name}", flush=True)  # periodic progress
@@ -163,12 +158,11 @@ class Extractor:
                 if all(parsed.get(k) is not None for k in required):  # keep only valid products
                     parsed["source_file"] = str(html_path)  # provenance for traceability
 
-                    # deduplication (keep FIRST occurrence)  # default field is "name" unless overridden
                     field =  "name"  # choose field to dedupe by
                     key = self._dedupe_key(parsed, field) if field else None  # normalize to a comparable key
 
                     if key is not None and key in seen:
-                        continue  # already accepted a record for this key → skip duplicates (keep the first)
+                        continue  # already accepted a record for this key
 
                     if key is not None:
                         seen.add(key)  # remember this key as accepted
@@ -187,10 +181,10 @@ class Extractor:
         return products  # full list of parsed product records
 
     def save_products(self, products):
-        out_path = self.app_cfg["products_path"]  # NDJSON output path from config
-        p = Path(out_path)  # ensure Path object
+        out_path = self.app_cfg["products_path"]
+        p = Path(out_path)
         mode = "w"  # overwrite output on each run
         with p.open(mode, encoding="utf-8") as f:
             for rec in products:
-                f.write(json.dumps(rec, ensure_ascii=False) + "\n")  # one JSON per line (NDJSON)
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         return {"path": str(p), "count": len(products)}  # simple write summary
