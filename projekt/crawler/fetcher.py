@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# robots.txt cache (per-host)
+# robots.txt cache
 ROBOTS_CACHE, ROBOTS_TIME = {}, {}
 ROBOTS_TTL = 60 * 60  # seconds
 

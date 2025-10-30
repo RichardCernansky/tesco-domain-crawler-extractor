@@ -1,5 +1,5 @@
 import json
-import re  # regex operations used throughout
+import re
 from pathlib import Path
 from my_utils import *  # expects: flags, strip_html_plain, get_ingredients
 from html import unescape
