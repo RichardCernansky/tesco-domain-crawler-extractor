@@ -113,7 +113,7 @@ def run_postprocess(APP_CFG: dict):
         .withColumn("ingredients", get_ingredients_udf(F.col("ingredients_text")))
         # derive unit_bundle from unitpair
         .withColumn("unit_price", F.regexp_extract(F.col("unitpair"), r"(?is)^([0-9]+(?:\.[0-9]+)?)\s*/", 1))
-        .withColumn("unit_unit",  F.regexp_extract(F.col("unitpair"), r"(?is)/\s*([A-Za-z]+)\s*$", 1))
+        .withColumn("unit_unit",  F.regexp_extract(F.col("unitpair"), r"(?is)/\s*([A-Za-z]+)\b", 1))
         .withColumn("unit_bundle", F.struct(
             F.col("unit_price").alias("price"),
             F.col("unit_unit").alias("unit")
@@ -123,7 +123,7 @@ def run_postprocess(APP_CFG: dict):
     )
 
     # tidy helper cols
-    df_out = df.drop("ingredients_text", "unit_price", "unit_unit")
+    df_out = df.drop("ingredients_text", "unit_price", "unit_unit", "unitpair")
 
     # ---------- write NDJSON ----------
     (

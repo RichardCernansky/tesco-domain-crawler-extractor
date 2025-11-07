@@ -1,6 +1,7 @@
 import argparse, json
 from services import fetch_pages, extract_products, build_index, query, stats, test
 from spark.jobs.html_to_products import parse_products_spark
+from spark.jobs.postprocessing_extracted import run_postprocess
 
 
 def build_arg_parser():
@@ -13,6 +14,7 @@ def build_arg_parser():
     c_test = sub.add_parser("test", help="Build index.")
 
     c_spark_extract_products = sub.add_parser("spark-extract", help="Parse saved HTML files and emit NDJSON.")
+    c_spark_postprocess_products = sub.add_parser("spark-postprocess", help="Parse saved HTML files and emit NDJSON.")
 
     p_query = sub.add_parser("query")
     p_query.add_argument("--mode", choices=["idf", "idf_l2"], required=True)
@@ -51,6 +53,8 @@ def main():
         test(site_cfg,app_cfg)
     elif args.cmd == "spark-extract":
         parse_products_spark(app_cfg, site_cfg)
+    elif args.cmd == "spark-postprocess":
+        run_postprocess(app_cfg)
 
 if __name__ == "__main__":
     main()
