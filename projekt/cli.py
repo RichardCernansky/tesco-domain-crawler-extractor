@@ -1,5 +1,6 @@
 import argparse, json
 from services import fetch_pages, extract_products, build_index, query, stats, test
+from spark.jobs.html_to_products import parse_products_spark
 
 
 def build_arg_parser():
@@ -10,6 +11,8 @@ def build_arg_parser():
     c_build_index = sub.add_parser("build-index", help="Build index.")
     c_stats = sub.add_parser("stats", help="Build index.")
     c_test = sub.add_parser("test", help="Build index.")
+
+    c_spark_extract_products = sub.add_parser("spark-extract", help="Parse saved HTML files and emit NDJSON.")
 
     p_query = sub.add_parser("query")
     p_query.add_argument("--mode", choices=["idf", "idf_l2"], required=True)
@@ -46,7 +49,8 @@ def main():
         stats(app_cfg)
     elif args.cmd == "test":
         test(site_cfg,app_cfg)
-
+    elif args.cmd == "spark-extract":
+        parse_products_spark(app_cfg, site_cfg)
 
 if __name__ == "__main__":
     main()

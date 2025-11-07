@@ -1,0 +1,8 @@
+# 1) HTML -> produkty (NDJSON)
+spark-submit spark/jobs/html_to_products_sql.py
+
+# 2) WIKI -> riadky (NDJSON)
+spark-submit --packages com.databricks:spark-xml_2.12:0.16.0 spark/jobs/wiki_to_rows.py
+
+# 3) JOIN -> obohatené produkty (NDJSON)
+spark-submit spark/jobs/match_products_wiki.py

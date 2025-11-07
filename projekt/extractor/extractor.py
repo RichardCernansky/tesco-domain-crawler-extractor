@@ -17,7 +17,7 @@ class Extractor:
         name = unescape(name_m.group(1).strip()) if name_m else None  # HTML-decode + trim capture group
         return name  # may be None if no match
 
-    def get_ingredients(self, html, rx):
+    def _get_ingredients(self, html, rx):
         ingredients = None  # default if no ingredients found
         m = re.search(rx["ingredients_regex"], html)  # locate ingredients block
         if m:
@@ -97,7 +97,7 @@ class Extractor:
 
     def parse_product_html(self, html: str, rx: dict, html_name):
         name = self.get_name(html, rx)  # product title
-        ingredients = self.get_ingredients(html, rx)  # list or None
+        ingredients = self._get_ingredients(html, rx)  # list or None
         currency, price, unit_bundle = self.get_price_and_currency(html, rx)  # price triple
         brand = self.get_brand(html, rx)
         category = self.get_category(html, rx)

@@ -1,5 +1,6 @@
 {
   "storage_path": "data/storage",
+  "spark_storage_path": "data/wiki/out",
   "stack_path": "data/logs/stack1.txt",
   "visited_path": "data/logs/visited.txt",
   "metadata_path": "data/logs/metadata.ndjson",
@@ -8,6 +9,7 @@
   "index_path": "data/index/index.json",
   "unit_tests_path": "data/unit_tests.ndjson",
   "tiktoken_encoding": "o200k_base",
+  "products_spark_path": "products_spark.ndjson",
 
 
   "time_out": 2,
