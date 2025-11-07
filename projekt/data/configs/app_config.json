@@ -10,6 +10,7 @@
   "unit_tests_path": "data/unit_tests.ndjson",
   "tiktoken_encoding": "o200k_base",
   "products_spark_path": "products_spark.ndjson",
+  "wiki_file": "data/wiki/enwiki-20251020-pages-articles-multistream.xml.bz2",
 
 
   "time_out": 2,

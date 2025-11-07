@@ -62,20 +62,3 @@ def get_ingredients(inner: str) -> list[str] | None:
 
 
 
-def strip_html(col):
-    """
-    Jednoduché 'HTML -> plain text':
-    - odstráni <script>/<style>, HTML komentáre a tagy,
-    - nahradí <br> a konce blokov medzerou,
-    - znormalizuje whitespace,
-    - vráti NULL, ak výsledok je prázdny.
-    """
-    cleaned = F.regexp_replace(col, r'(?is)<(script|style)[^>]*>.*?</\1>', ' ')
-    cleaned = F.regexp_replace(cleaned, r'(?is)<!--.*?-->', ' ')
-    cleaned = F.regexp_replace(cleaned, r'(?i)<br\s*/?>', ' ')
-    cleaned = F.regexp_replace(cleaned, r'(?i)</(p|div|li|tr|th|td|h[1-6])\s*>', ' ')
-    cleaned = F.regexp_replace(cleaned, r'(?s)<[^>]*>', ' ')
-    # voliteľne ošetri &nbsp; → medzera
-    cleaned = F.regexp_replace(cleaned, r'&nbsp;', ' ')
-    normalized = F.trim(F.regexp_replace(cleaned, r'\s+', ' '))
-    return null_if_empty(normalized)

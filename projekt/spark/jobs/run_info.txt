@@ -1,0 +1,7 @@
+Pipeline ordered steps:
+    html_to_products
+    postprocessing_extracted
+    extract_unique_entities
+    extract_wiki_articles
+    build lookups
+    enrich products

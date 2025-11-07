@@ -44,8 +44,8 @@ def run_postprocess(APP_CFG: dict):
 
     # ---------- UDFs (your exact logic) ----------
     @F.udf(returnType=T.StringType())
-    def strip_html_plain(s: Optional[str]) -> Optional[str]:
-        if s is None:
+    def strip_html_plain(s: str) -> str:
+        if not s:
             return None
         s = re.sub(r'(?is)<(script|style)[^>]*>.*?</\1>', ' ', s)
         s = re.sub(r'(?is)<!--.*?-->', ' ', s)
@@ -55,8 +55,7 @@ def run_postprocess(APP_CFG: dict):
         s = unescape(s).replace('\xa0', ' ')
         s = s.replace('\r', ' ').replace('\n', ' ')
         s = re.sub(r'^\s*ingredients?\s*[:\-\u2013\u2014]\s*', '', s, flags=re.I)
-        s = re.sub(r'\s+', ' ', s).strip(' .;,[]')
-        return s if s else None
+        return re.sub(r'\s+', ' ', s).strip(' .;,[]')
 
     def _get_ingredients(inner: str) -> List[str]:
         def split_ingredients(s: str, sep: str):
@@ -106,6 +105,7 @@ def run_postprocess(APP_CFG: dict):
     df = (
         df0
         # clean text fields
+        .withColumn("category", strip_html_plain("category"))
         .withColumn("description", strip_html_plain(F.col("description")))
         .withColumn("highlights",  strip_html_plain(F.col("highlights")))
         .withColumn("ingredients_text", strip_html_plain(F.col("ingredients")))
