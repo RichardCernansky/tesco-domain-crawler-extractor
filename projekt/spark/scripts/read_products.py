@@ -1,7 +1,8 @@
 from pathlib import Path
 
-src_dir = Path("data/wiki/out/products_postprocessed.ndjson")
-dst_file =  Path("data/wiki/out/products_postprocessed_merged.ndjson")
+prefix = "brand_lookup_samples"
+src_dir = Path(f"data/wiki/out/{prefix}.ndjson")
+dst_file =  Path(f"data/wiki/out/{prefix}_merged.ndjson")
 
 with open(dst_file, "w", encoding="utf-8") as out:
     for part in sorted(src_dir.glob("part-*")):   # only Spark parts

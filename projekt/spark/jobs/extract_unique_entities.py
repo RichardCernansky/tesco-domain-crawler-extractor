@@ -67,7 +67,7 @@ def extract_unique_entities(APP_CFG: dict):
         .where(F.col("brand").isNotNull())
         .where(F.length(F.trim("brand")) > 0)
         .distinct()
-        .withColumn("brand_normalized", F.lower(F.regexp_replace("brand", "[^a-z0-9]", " ")))
+        .withColumn("brand_normalized", F.lower(F.col("brand")))
         .withColumn("brand_normalized", F.regexp_replace("brand_normalized", r"\s+", " "))
         .withColumn("brand_normalized", F.trim("brand_normalized"))
     )
@@ -82,12 +82,12 @@ def extract_unique_entities(APP_CFG: dict):
         .where(F.col("category").isNotNull())
         .where(F.length(F.trim("category")) > 0)
         .distinct()
-        .withColumn("category_normalized", F.lower(F.regexp_replace("category", "[^a-z0-9]", " ")))
+        .withColumn("category_normalized", F.lower(F.col("category")))
         .withColumn("category_normalized", F.regexp_replace("category_normalized", r"\s+", " "))
         .withColumn("category_normalized", F.trim("category_normalized"))
         # Extract main category keywords (before &, -, or "and")
         .withColumn("category_main",
-                    F.regexp_extract("category", r"^([^&\-]+?)(?:\s+(?:&|and|-)|\s*$)", 1))
+                    F.regexp_extract("category_normalized", r"^([^&\-]+?)(?:\s+(?:&|and|-)|\s*$)", 1))
         .withColumn("category_main", F.trim("category_main"))
     )
 
@@ -101,9 +101,10 @@ def extract_unique_entities(APP_CFG: dict):
         .where(F.col("ingredient").isNotNull())
         .where(F.length(F.trim("ingredient")) > 0)
         .distinct()
-        .withColumn("ingredient_normalized", F.lower(F.regexp_replace("ingredient", "[^a-z0-9]", " ")))
+        .withColumn("ingredient_normalized", F.lower(F.col("ingredient")))
         .withColumn("ingredient_normalized", F.regexp_replace("ingredient_normalized", r"\s+", " "))
         .withColumn("ingredient_normalized", F.trim("ingredient_normalized"))
+
         # Skip too generic ingredients
         .withColumn("is_generic",
                     F.when(F.col("ingredient_normalized").isin(["water", "salt"]), True)

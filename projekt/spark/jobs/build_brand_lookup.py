@@ -1,6 +1,6 @@
 # spark/jobs/build_brand_lookup.py
 """
-Match brands to Wikipedia articles and create lookup table.
+Match brands to Wikipedia articles and extract detailed brand info.
 """
 
 from pathlib import Path
@@ -9,7 +9,7 @@ from pyspark.sql import SparkSession, functions as F, types as T, Window
 
 def build_brand_lookup(APP_CFG: dict):
     """
-    Match unique brands to Wikipedia articles.
+    Match unique brands to Wikipedia articles and extract brand details.
 
     Output: brand_to_wiki.parquet
     """
@@ -32,9 +32,11 @@ def build_brand_lookup(APP_CFG: dict):
     df_wiki = spark.read.parquet(WIKI_PATH)
 
     print(f"Brands to match: {df_brands.count()}")
-    print(f"Wikipedia articles: {df_wiki.count()}")
+    print(f"Wikipedia articles available: {df_wiki.count()}")
 
+    # ============================================
     # TIER 1: Exact title match
+    # ============================================
     df_exact = (
         df_brands.alias("b")
         .join(
@@ -47,98 +49,79 @@ def build_brand_lookup(APP_CFG: dict):
             F.col("b.brand_normalized"),
             F.col("w.wiki_id"),
             F.col("w.wiki_title"),
-            F.col("w.wiki_description"),
+            F.col("w.wiki_url"),
+            F.col("w.wiki_text"),
             F.col("w.has_infobox"),
             F.col("w.infobox_type"),
             F.col("w.categories"),
-            F.lit("exact").alias("match_method"),
-            F.when(F.col("w.wiki_id").isNotNull(), 0.95).otherwise(0.0).alias("confidence")
         )
     )
 
-    # TIER 2: Match with common suffixes
-    brand_variations = (
-        df_brands
-        .select(
-            "brand",
-            "brand_normalized",
-            # Generate variations
-            F.array(
-                F.col("brand_normalized"),
-                F.concat(F.col("brand_normalized"), F.lit(" brand")),
-                F.concat(F.col("brand_normalized"), F.lit(" company")),
-                F.concat(F.col("brand_normalized"), F.lit(" corporation"))
-            ).alias("variations")
-        )
-        .select("brand", "brand_normalized", F.explode("variations").alias("variation"))
-    )
+    df_all_matches = df_exact
 
-    df_variation = (
-        brand_variations.alias("b")
-        .join(
-            df_wiki.alias("w"),
-            F.col("b.variation") == F.col("w.title_normalized"),
-            "left"
-        )
-        .where(F.col("w.wiki_id").isNotNull())
-        .select(
-            F.col("b.brand"),
-            F.col("b.brand_normalized"),
-            F.col("w.wiki_id"),
-            F.col("w.wiki_title"),
-            F.col("w.wiki_description"),
-            F.col("w.has_infobox"),
-            F.col("w.infobox_type"),
-            F.col("w.categories"),
-            F.lit("variation").alias("match_method"),
-            F.lit(0.85).alias("confidence")
-        )
-    )
 
-    # TIER 3: Token-based matching (all tokens must be present)
-    df_tokens = (
-        df_brands.alias("b")
-        .withColumn("brand_tokens", F.split("brand_normalized", " "))
-        .join(
-            df_wiki.alias("w"),
-            "wiki_id"  # Cross join placeholder
-        )
-        # Check if all brand tokens are in wiki title tokens
-        .withColumn("tokens_match",
-                    F.size(F.array_intersect(F.col("brand_tokens"), F.col("w.title_tokens")))
-                    == F.size("brand_tokens")
-                    )
-        .where(F.col("tokens_match"))
-        .where(F.col("w.has_infobox"))  # Only with infobox for quality
-        .select(
-            F.col("b.brand"),
-            F.col("b.brand_normalized"),
-            F.col("w.wiki_id"),
-            F.col("w.wiki_title"),
-            F.col("w.wiki_description"),
-            F.col("w.has_infobox"),
-            F.col("w.infobox_type"),
-            F.col("w.categories"),
-            F.lit("tokens").alias("match_method"),
-            # Prefer shorter titles (more likely to be exact entity)
-            (0.75 / (1 + F.length("w.wiki_title") * 0.01)).alias("confidence")
-        )
-    )
 
-    # Combine all tiers
-    df_all_matches = df_exact.union(df_variation).union(df_tokens)
 
-    # For each brand, pick best match
-    window = Window.partitionBy("brand").orderBy(F.desc("confidence"))
-
+    # ============================================
+    # EXTRACT DETAILED INFO FROM wiki_text
+    # ============================================
     df_lookup = (
         df_all_matches
-        .withColumn("rank", F.row_number().over(window))
-        .where(F.col("rank") == 1)
-        .drop("rank")
-        # Add match quality flags
-        .withColumn("needs_review",
-                    (F.col("confidence") < 0.7) | (~F.col("has_infobox")))
+
+        # Extract first paragraph as description
+        .withColumn("clean_text",
+                    F.regexp_replace(F.col("wiki_text"), r"\{\{[^}]+\}\}", " ")
+                    )
+        .withColumn("clean_text",
+                    F.regexp_replace(F.col("clean_text"), r"\[\[([^\]]+\|)?([^\]]+)\]\]", "$2")
+                    )
+        .withColumn("first_para",
+                    F.regexp_extract(F.col("clean_text"), r"(?s)\A\s*(.+?)(?:\n\s*\n|$)", 1)
+                    )
+        .withColumn("wiki_description",
+                           F.regexp_replace(F.trim(F.col("first_para")), r"\s+", " ")
+                    )
+
+
+        # Extract from infobox (if exists)
+        .withColumn("introduced",
+                    F.regexp_extract(F.col("wiki_text"),        r"(?i)(?:introduced|founded|established).*?(\d{4})", 1)
+                    )
+
+        .withColumn("origin",
+                    F.regexp_extract(F.col("wiki_text"),  r"(?is)(?:origin|headquarters)\b.*?\[([^\]]+)\]", 1)
+                    )
+
+        .withColumn("website",
+                    F.regexp_extract(F.col("wiki_text"),  r"(?is)website\b.*?\b(www\.[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:/[^\s\]|}<]*)?)", 1)
+                    )
+
+
+        # Drop the full wiki_text (we've extracted what we need)
+        .drop("wiki_text", "clean_text")
+
+        # Select final columns
+        .select(
+            # Brand info
+            "brand",
+            "brand_normalized",
+
+            # Wikipedia match info
+            "wiki_id",
+            "wiki_title",
+            "wiki_url",
+            "wiki_description",
+
+            # Extracted brand details
+            "introduced",
+            "origin",
+            "website",
+
+            # Metadata
+            "has_infobox",
+            "infobox_type",
+            "categories",
+        )
     )
 
     # Write lookup table
@@ -148,12 +131,35 @@ def build_brand_lookup(APP_CFG: dict):
     print(f"Total brands: {df_brands.count()}")
     print(f"Matched: {df_lookup.filter('wiki_id IS NOT NULL').count()}")
     print(f"Unmatched: {df_lookup.filter('wiki_id IS NULL').count()}")
-    print(f"High confidence (>0.8): {df_lookup.filter('confidence > 0.8').count()}")
-    print(f"Needs review: {df_lookup.filter('needs_review').count()}")
+    print(f"With description: {df_lookup.where((F.col('wiki_description').isNotNull()) & (F.col('wiki_description') != '')).count()}")
+    print(f"With introduced year: {df_lookup.where((F.col('introduced').isNotNull()) & (F.col('introduced') != '')).count()}")
+    print(f"With origin: {df_lookup.where((F.col('origin').isNotNull()) & (F.length('origin') > 0)).count()}")
+    print(f"With website: {df_lookup.where((F.col('website').isNotNull()) & (F.length('website') > 0)).count()}")
     print(f"Output: {OUT_PATH}")
 
-    # Show sample matches
-    print("\nSample matches:")
-    df_lookup.filter("wiki_id IS NOT NULL").show(10, truncate=False)
+    # Show sample matches with extracted data
+    print("\nSample matches with extracted data:")
+    df_lookup.filter("wiki_id IS NOT NULL").select(
+        "brand",
+        "wiki_title",
+        "introduced",
+        "origin",
+        "website",
+    ).show(10, truncate=False)
+
+    # Save 10 samples to JSON file
+    # SAMPLES_PATH = str(Path(APP_CFG["spark_storage_path"]) / "brand_lookup_samples.json")
+    # df_lookup.filter("wiki_id IS NOT NULL"
+    # ).select(
+    #     "brand",
+    #     "wiki_title",
+    #     "introduced",
+    #     "origin",
+    #     "wiki_description",
+    #     "wiki_url",
+    #
+    # ).limit(10).coalesce(1).write.mode("overwrite").json(SAMPLES_PATH)
+    #
+    # print(f"\nSaved 10 samples to: {SAMPLES_PATH}")
 
     spark.stop()

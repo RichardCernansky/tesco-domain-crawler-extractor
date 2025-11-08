@@ -4,7 +4,8 @@ Parse Wikipedia XML dump and extract relevant articles WITH FULL TEXT.
 Creates searchable Wikipedia index with complete article content.
 """
 from pathlib import Path
-from pyspark.sql import SparkSession, functions as F, types as T
+from pyspark.sql import SparkSession, functions as F
+from pyspark.sql.functions import broadcast
 
 
 def extract_wiki_articles(APP_CFG: dict):
@@ -38,22 +39,25 @@ def extract_wiki_articles(APP_CFG: dict):
     df_ingredients = spark.read.parquet(INGREDIENTS_PATH).filter("NOT is_generic")
 
     # Create search patterns
-    search_terms = (
+    df_terms = (
         df_brands.select(F.col("brand_normalized").alias("term"))
         .union(df_categories.select(F.col("category_normalized").alias("term")))
-        .union(df_categories.select(F.lower(F.col("category_main")).alias("term")))
+        .union(df_categories.select(F.col("category_main").alias("term")))
         .union(df_ingredients.select(F.col("ingredient_normalized").alias("term")))
+        .where(F.col("term").isNotNull())
+        .where(F.length(F.col("term")) > 0)
+        .select(F.trim(F.regexp_replace(F.lower("term"), "[^a-z0-9]+", " ")).alias("term"))
         .distinct()
-        .collect()
     )
 
-    search_set = set(row.term for row in search_terms if row.term)
-    print(f"Searching for {len(search_set)} unique terms in Wikipedia")
+    unique_terms = df_terms.select("term").distinct()
+    n_terms = unique_terms.count()
+    print(f"Searching for {n_terms} unique terms in Wikipedia")
 
-    # Broadcast for efficient filtering
-    search_set_bc = spark.sparkContext.broadcast(search_set)
 
-    # Read Wikipedia
+    # ============================================
+    # STEP 2: Read Wikipedia
+    # ============================================
     df_wiki = (
         spark.read
         .format("xml")
@@ -61,19 +65,10 @@ def extract_wiki_articles(APP_CFG: dict):
         .load(WIKI_PATH)
     )
 
-    # Filter function
-    @F.udf(returnType=T.BooleanType())
-    def is_relevant_article(title: str) -> bool:
-        if not title:
-            return False
-        normalized = title.lower().replace("-", " ").replace("_", " ")
-        normalized = " ".join(normalized.split())
-        for term in search_set_bc.value:
-            if term in normalized or normalized in term:
-                return True
-        return False
-
-    df_filtered = (
+    # ============================================
+    # STEP 3: Filter using INNER JOIN (not UDF!)
+    # ============================================
+    df_wiki_processed = (
         df_wiki
         .select(
             F.col("title").alias("wiki_title"),
@@ -81,13 +76,27 @@ def extract_wiki_articles(APP_CFG: dict):
             F.col("ns").alias("namespace"),
             F.col("id").alias("wiki_id")
         )
-        .where(F.col("namespace") == 0)
-        .where(~F.lower(F.col("wiki_text")).like("#redirect%")) # exclude redirects
+        .where(F.col("namespace").cast("int") == 0)
         .where(F.col("wiki_text").isNotNull())
-        .where(is_relevant_article("wiki_title"))
+        .where(~F.col("wiki_text").rlike("(?is)^\\s*#redirect\\b"))
+        .withColumn(
+            "title_normalized",
+            F.trim(F.regexp_replace(F.lower("wiki_title"), "[^a-z0-9]+", " "))
+        )
     )
 
-    print(f"Filtered to {df_filtered.count()} relevant articles")
+
+    print("Filtering articles by exact title match...")
+
+    #exact match filter using join
+    df_filtered = (
+        df_wiki_processed.join(broadcast(df_terms), df_wiki_processed.title_normalized == df_terms.term, "inner")
+        .select(df_wiki_processed["*"])
+        .distinct()
+    )
+
+    filtered_count = df_filtered.count()
+    print(f"Filtered to {filtered_count:,} relevant articles (exact matches)")
 
     # Extract metadata but KEEP wiki_text
     df_articles = (
@@ -98,7 +107,7 @@ def extract_wiki_articles(APP_CFG: dict):
         # ============================================
 
         .withColumn("title_normalized",
-                    F.lower(F.regexp_replace("wiki_title", "[^a-z0-9]", " "))
+                    F.lower(F.col("wiki_title"))
                     )
         .withColumn("title_normalized",
                     F.regexp_replace("title_normalized", r"\s+", " ")
