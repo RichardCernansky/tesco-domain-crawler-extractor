@@ -1,4 +1,4 @@
-Pipeline ordered steps:
+Spark Pipeline Ordered Steps:
     html_to_products
     postprocessing_extracted
     extract_unique_entities
