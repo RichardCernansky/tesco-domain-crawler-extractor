@@ -42,7 +42,7 @@ def build_brand_lookup(APP_CFG: dict):
         .join(
             df_wiki.alias("w"),
             F.col("b.brand_normalized") == F.col("w.title_normalized"),
-            "left"
+            "inner"
         )
         .select(
             F.col("b.brand"),
@@ -130,7 +130,6 @@ def build_brand_lookup(APP_CFG: dict):
     print(f"\n=== Brand Lookup Results ===")
     print(f"Total brands: {df_brands.count()}")
     print(f"Matched: {df_lookup.filter('wiki_id IS NOT NULL').count()}")
-    print(f"Unmatched: {df_lookup.filter('wiki_id IS NULL').count()}")
     print(f"With description: {df_lookup.where((F.col('wiki_description').isNotNull()) & (F.col('wiki_description') != '')).count()}")
     print(f"With introduced year: {df_lookup.where((F.col('introduced').isNotNull()) & (F.col('introduced') != '')).count()}")
     print(f"With origin: {df_lookup.where((F.col('origin').isNotNull()) & (F.length('origin') > 0)).count()}")

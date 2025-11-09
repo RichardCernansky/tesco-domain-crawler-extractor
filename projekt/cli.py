@@ -1,10 +1,12 @@
 import argparse, json
 from services import fetch_pages, extract_products, build_index, query, stats, test
-from spark.jobs.build_brand_lookup import build_brand_lookup
 from spark.jobs.html_to_products import parse_products_spark
 from spark.jobs.postprocessing_extracted import run_postprocess
 from spark.jobs.extract_unique_entities import extract_unique_entities
 from spark.jobs.extract_wiki_articles import extract_wiki_articles
+from spark.jobs.build_brand_lookup import build_brand_lookup
+from spark.jobs.build_ingredient_lookup import build_ingredient_lookup
+from spark.jobs.enrich_products import enrich_products_with_wiki
 
 
 def build_arg_parser():
@@ -60,7 +62,7 @@ def main():
     elif args.cmd == "spark-postprocess":
         run_postprocess(app_cfg)
     elif args.cmd == "spark-develop":
-        build_brand_lookup(app_cfg)
+        enrich_products_with_wiki(app_cfg)
         return
 
 if __name__ == "__main__":
