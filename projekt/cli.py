@@ -1,5 +1,6 @@
 import argparse, json
 from services import fetch_pages, extract_products, build_index, query, stats, test
+
 from spark.jobs.html_to_products import parse_products_spark
 from spark.jobs.postprocessing_extracted import run_postprocess
 from spark.jobs.extract_unique_entities import extract_unique_entities
@@ -62,8 +63,9 @@ def main():
     elif args.cmd == "spark-postprocess":
         run_postprocess(app_cfg)
     elif args.cmd == "spark-develop":
-        enrich_products_with_wiki(app_cfg)
+        build_ingredient_lookup(app_cfg)
         return
+
 
 if __name__ == "__main__":
     main()

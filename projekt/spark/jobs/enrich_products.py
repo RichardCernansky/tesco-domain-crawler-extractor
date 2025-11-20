@@ -258,22 +258,10 @@ def enrich_products_with_wiki(APP_CFG: dict):
             "wiki_enrichment": sample_dict["wiki_enrichment"]
         }, indent=2, default=str))
 
-    # ============================================
     # SHOW PRODUCTS WITH HIGHEST COUNTS
-    # ============================================
-    print("\n=== Products with Most Sweeteners ===")
-    df_enriched.filter("sweetener_count > 0").select(
-        "name", "brand", "sweetener_count"
-    ).orderBy(F.desc("sweetener_count")).show(5, truncate=False)
-
     print("\n=== Products with Most Allergens ===")
     df_enriched.filter("allergen_count > 0").select(
         "name", "brand", "allergen_count"
     ).orderBy(F.desc("allergen_count")).show(5, truncate=False)
-
-    print("\n=== Products with Carcinogens ===")
-    df_enriched.filter("carcinogen_count > 0").select(
-        "name", "brand", "carcinogen_count"
-    ).orderBy(F.desc("carcinogen_count")).show(5, truncate=False)
 
     spark.stop()

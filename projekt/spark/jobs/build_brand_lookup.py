@@ -143,7 +143,6 @@ def build_brand_lookup(APP_CFG: dict):
         "wiki_title",
         "introduced",
         "origin",
-        "website",
     ).show(10, truncate=False)
 
     # Save 10 samples to JSON file
