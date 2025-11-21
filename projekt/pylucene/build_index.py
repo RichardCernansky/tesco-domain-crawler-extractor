@@ -154,7 +154,7 @@ with open(data_file, 'r', encoding='utf-8') as f:
         doc.add(IntPoint("ingredients_wiki_count", ingredients_count))
         doc.add(StoredField("ingredients_wiki_count", ingredients_count))
 
-        # Flag counters (pre filtering)
+        # Flag counters (pre-filtering)
         allergen_cnt = wiki_enrich.get("allergen_count", 0)
         doc.add(IntPoint("allergen_count", allergen_cnt))
         doc.add(StoredField("allergen_count", allergen_cnt))
