@@ -8,7 +8,6 @@ INDEX_FOLDER ="./pylucene/product_index"
 
 lucene.initVM()
 
-# Nájdi part súbor v priečinku
 part_files = glob.glob(f"{DATA_FOLDER}/part-*")
 
 if not part_files:
@@ -18,7 +17,6 @@ data_file = part_files[0]  # Máme len 1 súbor
 print(f"Loading data from: {data_file}")
 
 
-# Indexovanie
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.document import (
@@ -42,10 +40,7 @@ with open(data_file, 'r', encoding='utf-8') as f:
         product = json.loads(line)
         doc = Document()
 
-        # ============================================
         # BASIC PRODUCT FIELDS
-        # ============================================
-
         # Product ID (for exact lookup)
         doc.add(LongPoint("product_id", product.get("product_id", 0)))
         doc.add(StoredField("product_id", product.get("product_id", 0)))
@@ -72,9 +67,7 @@ with open(data_file, 'r', encoding='utf-8') as f:
             doc.add(DoublePoint("price_num", product["price_num"]))
             doc.add(StoredField("price_num", product["price_num"]))
 
-        # ============================================
         # BRAND WIKI ENRICHMENT
-        # ============================================
         brand_wiki = product.get("brand_wiki", {})
 
         if brand_wiki and brand_wiki.get("wiki_id"):
@@ -89,7 +82,6 @@ with open(data_file, 'r', encoding='utf-8') as f:
             doc.add(TextField("brand_description",
                               brand_wiki.get("description", ""), Field.Store.YES))
 
-            # NOVÉ POLIA!
             doc.add(StringField("brand_introduced",
                                 brand_wiki.get("introduced", ""), Field.Store.YES))
 
@@ -102,13 +94,11 @@ with open(data_file, 'r', encoding='utf-8') as f:
             doc.add(StringField("brand_infobox_type",
                                 brand_wiki.get("infobox_type", ""), Field.Store.YES))
 
-            # Categories (array → string)
+            # Categories array to string
             brand_categories = " ".join(brand_wiki.get("categories", []))
             doc.add(TextField("brand_categories", brand_categories, Field.Store.YES))
 
-        # ============================================
         # INGREDIENTS WIKI ENRICHMENT
-        # ============================================
         ingredients_wiki = product.get("ingredients_wiki", [])
 
         # Combine all ingredient descriptions for full-text search
@@ -139,12 +129,10 @@ with open(data_file, 'r', encoding='utf-8') as f:
             doc.add(StoredField("ingredients_wiki_json",
                                 json.dumps(ingredients_wiki)))
 
-        # ============================================
         # WIKI ENRICHMENT COUNTERS
-        # ============================================
         wiki_enrich = product.get("wiki_enrichment", {})
 
-        # Boolean: má brand wiki?
+        # Boolean: is there brand wiki?
         has_brand = 1 if wiki_enrich.get("has_brand_wiki") else 0
         doc.add(IntPoint("has_brand_wiki", has_brand))
         doc.add(StoredField("has_brand_wiki", has_brand))

@@ -24,12 +24,15 @@ def print_header(title):
     print("=" * 80)
 
 
-def print_results(hits, searcher, max_results=5):
+def print_results(hits, searcher, max_results=10):
     print(f"\nFound: {hits.totalHits.value} products\n")
     for i, hit in enumerate(hits.scoreDocs[:max_results], 1):
         doc = searcher.doc(hit.doc)
         print(f"  {i}. [Score: {hit.score:.2f}] {doc.get('name')}")
         print(f"     Brand: {doc.get('brand')} | Category: {doc.get('category')}")
+        price = doc.get('price_num')
+        if price:
+            print(f"     Price: {price}")
 
 
 def search_examples():
@@ -62,64 +65,76 @@ def search_examples():
 
     print_header("PYLUCENE SEARCH EXAMPLES")
 
-    print_header("1️⃣  TERM QUERY")
+    print_header("TERM QUERY")
 
-    print("\nExample 1a: Multi-field search")
-    print("Query: chocolate")
-    query = multi_parse("chocolate")
-    hits = searcher.search(query, 10)
-    print_results(hits, searcher)
-
-    print("\n" + "-" * 80)
-    print("\nExample 1b: Single-field search")
-    print("Query: name:organic")
-    query = single_parser.parse("organic")
-    hits = searcher.search(query, 10)
-    print_results(hits, searcher)
-
-    print_header("2️⃣  FUZZY QUERY")
-
-    print("\nExample 2a: Multi-field fuzzy")
-    print("Query: choclate~ (typo)")
-    query = multi_parse("choclate~")
-    hits = searcher.search(query, 10)
-    print_results(hits, searcher)
-
-    print("\n" + "-" * 80)
-    print("\nExample 2b: Single-field fuzzy")
-    print("Query: name:orgnic~ (typo)")
-    query = single_parser.parse("orgnic~")
-    hits = searcher.search(query, 10)
-    print_results(hits, searcher)
-
-    print_header("3️⃣  BOOLEAN QUERY")
-
-    print("\nExample 3a: Multi-field AND")
-    print("Query: chocolate organic")
-    query = multi_parse("chocolate organic")
-    hits = searcher.search(query, 10)
-    print_results(hits, searcher)
-
-    print("\n" + "-" * 80)
-    print("\nExample 3b: Mixed with NOT")
-    print("Query: chocolate category:Snacks NOT brand:Nestle")
+    print("\nExample 1a: Multi-field search with multiple terms")
+    print("Query: (chocolate OR cocoa) AND (milk OR dark)")
 
     bool_builder = BooleanQuery.Builder()
-    bool_builder.add(multi_parse("chocolate"), BooleanClause.Occur.MUST)
-
-    cat_parser = QueryParser("category", analyzer)
-    bool_builder.add(cat_parser.parse("Snacks"), BooleanClause.Occur.MUST)
-
-    brand_query = TermQuery(Term("brand", "nestle"))
-    bool_builder.add(brand_query, BooleanClause.Occur.MUST_NOT)
+    bool_builder.add(multi_parse("chocolate OR cocoa"), BooleanClause.Occur.MUST)
+    bool_builder.add(multi_parse("milk OR dark"), BooleanClause.Occur.MUST)
 
     hits = searcher.search(bool_builder.build(), 10)
     print_results(hits, searcher)
 
-    print_header("4️⃣  RANGE QUERY")
+    print("\n" + "-" * 80)
+    print("\nExample 1b: Multi-field search with brand and ingredient")
+    print("Query: (wine OR beer) AND ingredients:malt")
 
-    print("\nExample 4a: Text + allergen range")
-    print("Query: chocolate AND allergen_count:[0 TO 2]")
+    bool_builder = BooleanQuery.Builder()
+    bool_builder.add(multi_parse("wine OR beer"), BooleanClause.Occur.MUST)
+    ing_parser = QueryParser("ingredients", analyzer)
+    bool_builder.add(ing_parser.parse("malt"), BooleanClause.Occur.MUST)
+
+    hits = searcher.search(bool_builder.build(), 10)
+    print_results(hits, searcher)
+
+    print_header("FUZZY QUERY")
+
+    print("\nExample 2a: Multi-field fuzzy with term combination")
+    print("Query: (choclate~ OR strawbery~) AND (candy OR snack)")
+
+    bool_builder = BooleanQuery.Builder()
+    bool_builder.add(multi_parse("choclate~ OR strawbery~"), BooleanClause.Occur.MUST)
+    bool_builder.add(multi_parse("candy OR snack"), BooleanClause.Occur.MUST)
+
+    hits = searcher.search(bool_builder.build(), 10)
+    print_results(hits, searcher)
+
+    print("\n" + "-" * 80)
+    print("\nExample 2b: Fuzzy search with price range")
+    print("Query: orgnic~ AND price_num:[0.0 TO 10.0]")
+
+    bool_builder = BooleanQuery.Builder()
+    bool_builder.add(multi_parse("orgnic~"), BooleanClause.Occur.MUST)
+    bool_builder.add(
+        DoublePoint.newRangeQuery("price_num", 0.0, 10.0),
+        BooleanClause.Occur.MUST,
+    )
+
+    hits = searcher.search(bool_builder.build(), 10)
+    print_results(hits, searcher)
+
+    print_header("BOOLEAN QUERY")
+
+    print("\nExample 3a: Multi-field OR")
+    print("Query: rowntrees fruit pastilles gums jelly tots vegan artificial colours")
+    query = multi_parse("rowntrees OR fruit OR pastilles OR gums OR jelly OR tots OR vegan OR artificial OR colours")
+    hits = searcher.search(query, 10)
+    print_results(hits, searcher)
+
+    print("\n" + "-" * 80)
+    print("\nExample 3b: Multi-field OR")
+    print("Query: halloween OR led OR pumpkin OR lantern OR string OR lights OR maple OR garland OR wreath OR battery")
+
+    query = multi_parse("halloween OR led OR pumpkin OR lantern OR string OR lights OR maple OR garland OR wreath OR battery")
+    hits = searcher.search(query, 10)
+    print_results(hits, searcher)
+
+    print_header("RANGE QUERY")
+
+    print("\nExample 4a: Complex filter - chocolate with low allergens and price range")
+    print("Query: chocolate AND allergen_count:[0 TO 2] AND price_num:[1.0 TO 5.0] NOT category:Bakery")
 
     bool_builder = BooleanQuery.Builder()
     bool_builder.add(multi_parse("chocolate"), BooleanClause.Occur.MUST)
@@ -127,26 +142,36 @@ def search_examples():
         IntPoint.newRangeQuery("allergen_count", 0, 2),
         BooleanClause.Occur.MUST,
     )
+    bool_builder.add(
+        DoublePoint.newRangeQuery("price_num", 1.0, 5.0),
+        BooleanClause.Occur.MUST,
+    )
+
+    cat_parser = QueryParser("category", analyzer)
+    bool_builder.add(cat_parser.parse("Bakery"), BooleanClause.Occur.MUST_NOT)
 
     hits = searcher.search(bool_builder.build(), 10)
     print_results(hits, searcher)
 
     print("\n" + "-" * 80)
-    print("\nExample 4b: Price range")
-    print("Query: category:Wine AND price_num:[5.0 TO 15.0]")
+    print("\nExample 4b: Products with wiki enrichment and moderate price")
+    print("Query: (chocolate OR candy OR snack) AND price_num:[2.0 TO 10.0] AND ingredients_wiki_count:[1 TO 100]")
 
     bool_builder = BooleanQuery.Builder()
-    cat_parser = QueryParser("category", analyzer)
-    bool_builder.add(cat_parser.parse("Wine"), BooleanClause.Occur.MUST)
+    bool_builder.add(multi_parse("chocolate OR candy OR snack"), BooleanClause.Occur.MUST)
     bool_builder.add(
-        DoublePoint.newRangeQuery("price_num", 5.0, 15.0),
+        DoublePoint.newRangeQuery("price_num", 2.0, 10.0),
+        BooleanClause.Occur.MUST,
+    )
+    bool_builder.add(
+        IntPoint.newRangeQuery("ingredients_wiki_count", 1, 100),
         BooleanClause.Occur.MUST,
     )
 
     hits = searcher.search(bool_builder.build(), 10)
     print_results(hits, searcher)
 
-    print_header("5️⃣  PHRASE QUERY")
+    print_header("PHRASE QUERY")
 
     phrase_fields = [
         "name",
@@ -162,22 +187,40 @@ def search_examples():
     def multi_phrase_parse(q):
         return MultiFieldQueryParser.parse(phrase_parser, q)
 
-    print("\nExample 5a: Multi-field phrase")
-    print('Query: "gluten free"')
-    query = multi_phrase_parse('"gluten free"')
-    hits = searcher.search(query, 10)
+    print("\nExample 5a: Phrase search with allergen restriction")
+    print('Query: "gluten free" AND allergen_count:[0 TO 3]')
+
+    bool_builder = BooleanQuery.Builder()
+    bool_builder.add(multi_phrase_parse('"gluten free"'), BooleanClause.Occur.MUST)
+    bool_builder.add(
+        IntPoint.newRangeQuery("allergen_count", 0, 3),
+        BooleanClause.Occur.MUST,
+    )
+
+    hits = searcher.search(bool_builder.build(), 10)
     print_results(hits, searcher)
 
     print("\n" + "-" * 80)
-    print("\nExample 5b: Phrase with slop")
-    print('Query: "dark chocolate"~2 (max 2 words between)')
+    print("\nExample 5b: Multi-phrase with slop and exclusions")
+    print('Query: "dark chocolate"~2 AND ingredients_wiki_count:[3 TO 100] NOT sweetener_count:[1 TO 100]')
 
     phrase_builder = PhraseQuery.Builder()
     phrase_builder.add(Term("description", "dark"))
     phrase_builder.add(Term("description", "chocolate"))
     phrase_builder.setSlop(2)
 
-    hits = searcher.search(phrase_builder.build(), 10)
+    bool_builder = BooleanQuery.Builder()
+    bool_builder.add(phrase_builder.build(), BooleanClause.Occur.MUST)
+    bool_builder.add(
+        IntPoint.newRangeQuery("ingredients_wiki_count", 3, 100),
+        BooleanClause.Occur.MUST,
+    )
+    bool_builder.add(
+        IntPoint.newRangeQuery("sweetener_count", 1, 100),
+        BooleanClause.Occur.MUST_NOT,
+    )
+
+    hits = searcher.search(bool_builder.build(), 10)
     print_results(hits, searcher)
 
 
