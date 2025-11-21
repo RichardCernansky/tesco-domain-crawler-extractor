@@ -7,7 +7,7 @@ from spark.jobs.extract_unique_entities import extract_unique_entities
 from spark.jobs.extract_wiki_articles import extract_wiki_articles
 from spark.jobs.build_brand_lookup import build_brand_lookup
 from spark.jobs.build_ingredient_lookup import build_ingredient_lookup
-from spark.jobs.enrich_products import enrich_products_with_wiki
+from spark.jobs.enrich_products import enrich_products
 
 
 def build_arg_parser():
@@ -63,7 +63,7 @@ def main():
     elif args.cmd == "spark-postprocess":
         run_postprocess(app_cfg)
     elif args.cmd == "spark-develop":
-        build_ingredient_lookup(app_cfg)
+        enrich_products(app_cfg)
         return
 
 

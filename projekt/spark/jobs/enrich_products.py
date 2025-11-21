@@ -7,7 +7,7 @@ from pathlib import Path
 from pyspark.sql import SparkSession, functions as F, types as T
 
 
-def enrich_products_with_wiki(APP_CFG: dict):
+def enrich_products(APP_CFG: dict):
     """
     Join products with Wikipedia lookup tables to add enrichment data.
 
@@ -182,8 +182,10 @@ def enrich_products_with_wiki(APP_CFG: dict):
     # ============================================
     # WRITE ENRICHED PRODUCTS
     # ============================================
+
     (
         df_enriched
+        .coalesce(1)  # ← Pridaj tento riadok
         .select(F.to_json(F.struct(*df_enriched.columns)).alias("json"))
         .write.mode("overwrite").text(OUT_PATH)
     )
