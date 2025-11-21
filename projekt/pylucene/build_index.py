@@ -181,5 +181,5 @@ with open(data_file, 'r', encoding='utf-8') as f:
 writer.commit()
 writer.close()
 
-print(f"\n✅ Successfully indexed {count} products!")
+print(f"\nSuccessfully indexed {count} products!")
 print(f"Index location: {INDEX_FOLDER}")
