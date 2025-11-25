@@ -1,5 +1,5 @@
 import argparse, json
-from services import fetch_pages, extract_products, build_index, query, stats, test
+from services import fetch_pages, extract_products, build_index, query, stats, test, search_lucene
 
 from spark.jobs.html_to_products import parse_products_spark
 from spark.jobs.postprocessing_extracted import run_postprocess
@@ -22,6 +22,12 @@ def build_arg_parser():
     c_spark_extract_products = sub.add_parser("spark-extract", help="Parse saved HTML files and emit NDJSON.")
     c_spark_postprocess_products = sub.add_parser("spark-postprocess", help="Parse saved HTML files and emit NDJSON.")
     c_spark_develop = sub.add_parser("spark-develop", help="Parse saved HTML files and emit NDJSON.")
+
+    c_search = sub.add_parser("search", help="Search in data using PyLucene index")
+    c_search.add_argument("terms", nargs="+", metavar="terms")
+    c_search.add_argument("--field", "-f", default=None, help="Single field to search")
+    c_search.add_argument("--topk", type=int, default=10, help="Number of results")
+    c_search.add_argument("--no-fuzzy", action="store_true", help="Disable fuzzy matching")
 
     p_query = sub.add_parser("query")
     p_query.add_argument("--mode", choices=["idf", "idf_l2"], required=True)
@@ -64,7 +70,10 @@ def main():
         run_postprocess(app_cfg)
     elif args.cmd == "spark-develop":
         enrich_products(app_cfg)
-        return
+    elif args.cmd == "search":
+        search_lucene(app_cfg, args)
+
+    return
 
 
 

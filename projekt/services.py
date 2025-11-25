@@ -5,6 +5,7 @@ from indexer.index import Index
 from stats.statistician import Statistician
 from my_utils import load_jsonl, build_products_by_id, join_hits
 from stats.tester import Tester
+from pylucene.searcher import search_products
 
 def fetch_pages(site_cfg: dict, app_cfg: dict):
     crawler = Crawler(site_cfg, app_cfg)
@@ -48,3 +49,17 @@ def test(site_config:dict, app_config:dict):
     tester = Tester(extractor, app_config)
     tester.test()
     return
+
+def search_lucene(app_config: dict, args):
+    q = " ".join(args.terms)
+    fuzzy = not args.no_fuzzy
+    results = search_products(q, top_k=args.topk, field=args.field, fuzzy=fuzzy)
+    for i, r in enumerate(results, 1):
+        name = r.get("name") or ""
+        brand = r.get("brand") or ""
+        category = r.get("category") or ""
+        price = r.get("price_num") or ""
+        score = r.get("score") or 0.0
+        print(f"{i}. [{score:.2f}] {name}")
+        print(f"   Brand: {brand} | Category: {category} | Price: {price}")
+
