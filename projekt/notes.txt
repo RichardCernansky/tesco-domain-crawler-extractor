@@ -54,3 +54,29 @@ python cli.py query --mode idf --topk 10 kinder chocolate bars maltesers pouch c
 python cli.py query --mode idf --topk 10 halloween led pumpkin lantern string lights maple garland wreath battery
 
 python cli.py query --mode idf --topk 10 costume halloween grim reaper witch pumpkin clown mask kids adult
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

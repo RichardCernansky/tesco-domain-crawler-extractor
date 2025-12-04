@@ -3,7 +3,7 @@ from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.queryparser.classic import QueryParser, MultiFieldQueryParser
-from org.apache.lucene.search import IndexSearcher
+from org.apache.lucene.search import IndexSearcher, BooleanQuery
 from org.apache.lucene.store import FSDirectory
 
 INDEX_FOLDER = "./pylucene/product_index"
@@ -23,6 +23,10 @@ SEARCH_FIELDS = [
 def _get_searcher_and_analyzer():
     if not lucene.getVMEnv():
         lucene.initVM()
+
+    # Set this EVERY time, not just on VM init
+    BooleanQuery.setMaxClauseCount(4096)
+
     directory = FSDirectory.open(Paths.get(INDEX_FOLDER))
     reader = DirectoryReader.open(directory)
     searcher = IndexSearcher(reader)
@@ -35,15 +39,19 @@ def search_products(query_text, top_k=10, field=None, fuzzy=True):
     tokens = [t for t in query_text.strip().split() if t]
     if not tokens:
         return []
+
     if fuzzy:
         processed = []
         for tok in tokens:
-            if len(tok) >= 3:
+            if len(tok) >= 3 and len(tok) <= 15:
                 processed.append(tok + "~")
             else:
                 processed.append(tok)
         tokens = processed
-    q_string = " OR ".join(tokens)
+
+    # Use AND instead of OR to reduce clause explosion
+    q_string = " ".join(tokens)  # Changed from " OR ".join(tokens)
+
     if field:
         parser = QueryParser(field, analyzer)
         parser.setDefaultOperator(QueryParser.Operator.OR)
@@ -52,6 +60,7 @@ def search_products(query_text, top_k=10, field=None, fuzzy=True):
         parser = MultiFieldQueryParser(SEARCH_FIELDS, analyzer)
         parser.setDefaultOperator(QueryParser.Operator.OR)
         lucene_query = MultiFieldQueryParser.parse(parser, q_string)
+
     hits = searcher.search(lucene_query, top_k)
     results = []
     for hit in hits.scoreDocs:
