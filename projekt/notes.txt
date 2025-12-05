@@ -61,10 +61,46 @@ python cli.py query --mode idf --topk 10 costume halloween grim reaper witch pum
 
 
 
+===== Tabuľka 1: Porovnanie Starý (Custom ElasticSearch) vs. Nový (PyLucene) index =====
 
+^ Ukážka ^ Starý index (Custom) ^ Nový index (PyLucene) ^ Víťaz ^ Poznámky ^
+| **Ukážka 1** \\ chocolate sweeteners | **Top:** Lindt Lindor (64.3) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 1164 ms | **Top:** Maltesers (25.8) \\ **Relevancia:** 70% (7/10) \\ **Čas:** 283 ms | **Nový** | Starý 4× pomalší ale 2.5× vyššie skóre |
+| **Ukážka 2** \\ semi skimmed milk | **Top:** Tesco Semi 1.13L (92.6) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 881 ms | **Top:** Arla BOB Skimmed (29.6) \\ **Relevancia:** 60% (6/10) \\ **Čas:** 270 ms | **Starý** | Nový má čokolády na #6,7,9 |
+| **Ukážka 3** \\ halloween pumpkin lights | **Top:** Living/Home LED (119.8) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 539 ms | **Top:** Living/Home LED (28.6) \\ **Relevancia:** 70% (7/10) \\ **Čas:** 269 ms | **Starý** | Nový má jedlo na #3,9,10 |
+| **Ukážka 4** \\ mini muffins multipack | **Top:** Tesco White Muffins (52.1) \\ **Relevancia:** 30% (3/10) \\ **Čas:** 311 ms | **Top:** Warburtons Protein (16.7) \\ **Relevancia:** 60% (6/10) \\ **Čas:** 266 ms | **Nový** | Nový našiel mini muffins, starý len English muffins |
+| **Ukážka 5** \\ teddy bear toy gift | **Top:** Care Bears (111.3) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 577 ms | **Top:** Care Bears (21.5) \\ **Relevancia:** 30% (3/10) \\ **Čas:** 295 ms | **Starý** | Nový má jedlo a mopy na 7 pozíciách |
+| **Ukážka 6** \\ smart appliances wifi | **Top:** Pro Breeze (81.9) \\ **Relevancia:** 80% (8/10) \\ **Čas:** 887 ms | **Top:** HYE Smart TV (14.4) \\ **Relevancia:** 60% (6/10) \\ **Čas:** 292 ms | **Remíza** | Nový má jedlo na #4,5,9,10 |
+| **PRIEMER** | **Skóre:** 85.6 \\ **Relevancia:** 85% \\ **Čas:** 643 ms | **Skóre:** 22.3 \\ **Relevancia:** 58% \\ **Čas:** 274 ms | **3:2** | Starý má 3.8× vyššie skóre, nový 2.3× rýchlejší |
 
+**Zhrnutie:**
+  * **Starý index:** 85% relevancia, vyššie skóre, čisté výsledky
+  * **Nový index:** 58% relevancia, 2.3× rýchlejší, ale vážne problémy s filtráciou
+  * **Hlavný problém:** Nový nedokáže filtrovať nerelevantné kategórie (jedlo, mopy)
 
+===== Tabuľka 2: Porovnanie všetkých riešení =====
 
+^ Ukážka ^ Starý index ^ Nový index ^ Google Shopping ^ Tesco Domain ^ Najlepší ^
+| **1** \\ chocolate sweeteners | **Top:** Lindt (64.3) \\ **Rel:** 100% \\ **Čas:** 1164ms | **Top:** Maltesers (25.8) \\ **Rel:** 70% \\ **Čas:** 283ms | **Top:** Lily's Stevia (€4.68) \\ **Rel:** 100% | **Top:** Toblerone (£12) \\ **Rel:** 80% | **Google** - presne sweeteners |
+| **2** \\ semi skimmed milk | **Top:** Tesco Semi (92.6) \\ **Rel:** 100% \\ **Čas:** 881ms | **Top:** Arla BOB (29.6) \\ **Rel:** 60% \\ **Čas:** 270ms | **Top:** Delhaize 12pk (€16.66) \\ **Rel:** 100% | **Top:** Cravendale 2L (£2.90) \\ **Rel:** 100% | **Tesco** - cena/objem |
+| **3** \\ halloween pumpkin lights | **Top:** Living/Home (119.8) \\ **Rel:** 100% \\ **Čas:** 539ms | **Top:** Living/Home (28.6) \\ **Rel:** 70% \\ **Čas:** 269ms | **Top:** Runleo 30 LED (€19.81) \\ **Rel:** 100% | **Top:** Pumpkins String (£1.89) \\ **Rel:** 100% | **Tesco** - cena |
+| **4** \\ mini muffins multipack | **Top:** Tesco White (52.1) \\ **Rel:** 30% \\ **Čas:** 311ms | **Top:** Warburtons (16.7) \\ **Rel:** 60% \\ **Čas:** 266ms | **Top:** GutundGünstig (€2.98) \\ **Rel:** 50% | **Top:** Cadbury Mixed (£4.50) \\ **Rel:** 90% | **Tesco** - mixed flavors |
+| **5** \\ teddy bear toy gift | **Top:** Care Bears (111.3) \\ **Rel:** 100% \\ **Čas:** 577ms | **Top:** Care Bears (21.5) \\ **Rel:** 30% \\ **Čas:** 295ms | **Top:** IKASA Giant (€36.90) \\ **Rel:** 100% | **Top:** Mumbles (£14) \\ **Rel:** 100% | **Tesco/Google** |
+| **6** \\ smart appliances wifi | **Top:** Pro Breeze (81.9) \\ **Rel:** 80% \\ **Čas:** 887ms | **Top:** HYE TV (14.4) \\ **Rel:** 60% \\ **Čas:** 292ms | **Top:** Meross Hub (€19.35) \\ **Rel:** 100% | **Top:** Pro Breeze (£159.99) \\ **Rel:** 100% | **Google** - špecializované |
+| **PRIEMER** | **Rel:** 85% \\ **Čas:** 643ms | **Rel:** 58% \\ **Čas:** 274ms | **Rel:** 92% | **Rel:** 95% | - |
+
+**Celkové poradie:**
+
+^ Riešenie ^ Výhry ^ Priemerná relevancia ^ Priemerná rýchlosť ^ Hodnotenie ^
+| **Tesco Domain** | 3/6 | 95% | - | Najlepšia kategorizácia a ceny |
+| **Google Shopping** | 1/6 | 92% | - | Špecializované produkty |
+| **Starý index** | 2/6 | 85% | 643ms | Vysoká kvalita výsledkov |
+| **Nový index** | 0/6 | 58% | 274ms | Rýchlejší, ale nízka relevancia |
+
+**Záver:**
+  * **Tesco Domain:** 95% relevancia - konzistentne najlepšie
+  * **Google Shopping:** 92% relevancia - špecializované produkty
+  * **Starý index:** 85% relevancia - konkurencieschopný
+  * **Nový index:** 58% relevancia - potrebuje zlepšenie rankingu
 
 
 
