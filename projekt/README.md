@@ -10,15 +10,15 @@ Program vyžaduje PyLucene, preto je odporúčané použiť Docker kontajner.
 
 #### 1. Build Docker image
 ```bash
-docker build -t scraper-pylucene -f Dockerfile.pylucene .
+docker build -t scraper-pylucene .
 ```
 
 #### 2. Spustenie kontajnera
 ```bash
-docker run -it --rm \
-  -v $(pwd)/data:/usr/src/app/data \
-  -v $(pwd)/pylucene:/usr/src/app/pylucene \
-  scraper-pylucene bash
+docker run -it \               
+  -v /Users/richardcernansky/Desktop/VINF/projekt:/usr/src/app \
+  scraper-pylucene:latest \
+  /bin/bash
 ```
 
 Po spustení kontajnera sa dostanete do shellu, kde môžete vykonávať všetky príkazy.
