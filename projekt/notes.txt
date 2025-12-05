@@ -61,32 +61,52 @@ python cli.py query --mode idf --topk 10 costume halloween grim reaper witch pum
 
 
 
-===== Tabuľka 1: Porovnanie Starý (Custom ElasticSearch) vs. Nový (PyLucene) index =====
+
+PREZENTACIA:
+
+docker run -it \
+  -v /Users/richardcernansky/Desktop/VINF/projekt:/usr/src/app \
+  scraper-pylucene:latest \
+  /bin/bash
+cd /usr/src/app
+
+python cli.py query --mode idf_l2 --topk 10 the sweetest chocolate bar on the market with sweeteners
+python cli.py search the sweetest chocolate bar on the market with sweeteners
+
+Po pridani ingredient descriptions do searchu katastrofalne zhorsenie noveho indexu
+
+
+===== Tabuľky zhrnutia =====
+
+==== Tabuľka 1: Porovnanie Starý (Custom ElasticSearch) vs. Nový (PyLucene) index ====
 
 ^ Ukážka ^ Starý index (Custom) ^ Nový index (PyLucene) ^ Víťaz ^ Poznámky ^
-| **Ukážka 1** \\ chocolate sweeteners | **Top:** Lindt Lindor (64.3) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 1164 ms | **Top:** Maltesers (25.8) \\ **Relevancia:** 70% (7/10) \\ **Čas:** 283 ms | **Nový** | Starý 4× pomalší ale 2.5× vyššie skóre |
-| **Ukážka 2** \\ semi skimmed milk | **Top:** Tesco Semi 1.13L (92.6) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 881 ms | **Top:** Arla BOB Skimmed (29.6) \\ **Relevancia:** 60% (6/10) \\ **Čas:** 270 ms | **Starý** | Nový má čokolády na #6,7,9 |
-| **Ukážka 3** \\ halloween pumpkin lights | **Top:** Living/Home LED (119.8) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 539 ms | **Top:** Living/Home LED (28.6) \\ **Relevancia:** 70% (7/10) \\ **Čas:** 269 ms | **Starý** | Nový má jedlo na #3,9,10 |
-| **Ukážka 4** \\ mini muffins multipack | **Top:** Tesco White Muffins (52.1) \\ **Relevancia:** 30% (3/10) \\ **Čas:** 311 ms | **Top:** Warburtons Protein (16.7) \\ **Relevancia:** 60% (6/10) \\ **Čas:** 266 ms | **Nový** | Nový našiel mini muffins, starý len English muffins |
-| **Ukážka 5** \\ teddy bear toy gift | **Top:** Care Bears (111.3) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 577 ms | **Top:** Care Bears (21.5) \\ **Relevancia:** 30% (3/10) \\ **Čas:** 295 ms | **Starý** | Nový má jedlo a mopy na 7 pozíciách |
-| **Ukážka 6** \\ smart appliances wifi | **Top:** Pro Breeze (81.9) \\ **Relevancia:** 80% (8/10) \\ **Čas:** 887 ms | **Top:** HYE Smart TV (14.4) \\ **Relevancia:** 60% (6/10) \\ **Čas:** 292 ms | **Remíza** | Nový má jedlo na #4,5,9,10 |
-| **PRIEMER** | **Skóre:** 85.6 \\ **Relevancia:** 85% \\ **Čas:** 643 ms | **Skóre:** 22.3 \\ **Relevancia:** 58% \\ **Čas:** 274 ms | **3:2** | Starý má 3.8× vyššie skóre, nový 2.3× rýchlejší |
+| **Ukážka 1** \\ chocolate sweeteners | **Top:** Lindt Lindor (64.3) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 1164 ms | **Top:** Maltesers (25.8) \\ **Relevancia:** 80% (8/10) \\ **Čas:** 274 ms | **Nový** | Nový má Roma Wash Mitt #8 (nerelevantné) |
+| **Ukážka 2** \\ semi skimmed milk | **Top:** Tesco Semi 1.13L (92.6) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 881 ms | **Top:** Arla BOB Skimmed (29.6) \\ **Relevancia:** 60% (6/10) \\ **Čas:** 264 ms | **Starý** | Nový má čokolády na #6,7,9 |
+| **Ukážka 3** \\ halloween pumpkin lights | **Top:** Living/Home LED (119.8) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 539 ms | **Top:** Living/Home LED (28.6) \\ **Relevancia:** 70% (7/10) \\ **Čas:** 312 ms | **Remíza** | Nový má jedlo na #9,10 |
+| **Ukážka 4** \\ mini muffins multipack | **Top:** Tesco White Muffins (52.1) \\ **Relevancia:** 30% (3/10) \\ **Čas:** 311 ms | **Top:** Warburtons Protein (16.7) \\ **Relevancia:** 60% (6/10) \\ **Čas:** 274 ms | **Nový** | Nový našiel mini muffins, starý len English muffins |
+| **Ukážka 5** \\ teddy bear toy gift | **Top:** Care Bears (111.3) \\ **Relevancia:** 100% (10/10) \\ **Čas:** 577 ms | **Top:** Care Bears (21.5) \\ **Relevancia:** 20% (2/10) \\ **Čas:** 283 ms | **Starý** | Nový má mopy #2,3, jedlo #5,7,8,10, kozmetiku #4,9 |
+| **Ukážka 6** \\ smart appliances wifi | **Top:** Pro Breeze (81.9) \\ **Relevancia:** 80% (8/10) \\ **Čas:** 887 ms | **Top:** HYE TV (14.4) \\ **Relevancia:** 40% (4/10) \\ **Čas:** 286 ms | **Starý** | Nový má jedlo #2,5,6,7,10 |
+| **PRIEMER** | **Skóre:** 85.6 \\ **Relevancia:** 85% \\ **Čas:** 643 ms | **Skóre:** 22.3 \\ **Relevancia:** 55% \\ **Čas:** 282 ms | **3:2** | Starý má 3.8× vyššie skóre, nový 2.3× rýchlejší |
+
+
 
 **Zhrnutie:**
   * **Starý index:** 85% relevancia, vyššie skóre, čisté výsledky
-  * **Nový index:** 58% relevancia, 2.3× rýchlejší, ale vážne problémy s filtráciou
-  * **Hlavný problém:** Nový nedokáže filtrovať nerelevantné kategórie (jedlo, mopy)
+  * **Nový index:** 55% relevancia (znížená z 58%), 2.3× rýchlejší, zhoršené problémy s kontamináciou
+  * **Hlavný problém:** Nový nedokáže filtrovať nerelevantné kategórie. Wikipedia enrichment pridáva bias - produkty s viac ingredienciami majú vyššie skóre kvôli väčšiemu množstvu indexovaného textu, čo vedie ku kontaminácii výsledkov nepríbuznými produktmi.
+  * **Zhoršenie:** Ukážka 5 (teddy bear) má teraz iba 20% relevanciu (bolo 30%) - 80% výsledkov je úplne nerelevantných
 
-===== Tabuľka 2: Porovnanie všetkých riešení =====
+==== Tabuľka 2: Porovnanie všetkých riešení ====
 
 ^ Ukážka ^ Starý index ^ Nový index ^ Google Shopping ^ Tesco Domain ^ Najlepší ^
-| **1** \\ chocolate sweeteners | **Top:** Lindt (64.3) \\ **Rel:** 100% \\ **Čas:** 1164ms | **Top:** Maltesers (25.8) \\ **Rel:** 70% \\ **Čas:** 283ms | **Top:** Lily's Stevia (€4.68) \\ **Rel:** 100% | **Top:** Toblerone (£12) \\ **Rel:** 80% | **Google** - presne sweeteners |
-| **2** \\ semi skimmed milk | **Top:** Tesco Semi (92.6) \\ **Rel:** 100% \\ **Čas:** 881ms | **Top:** Arla BOB (29.6) \\ **Rel:** 60% \\ **Čas:** 270ms | **Top:** Delhaize 12pk (€16.66) \\ **Rel:** 100% | **Top:** Cravendale 2L (£2.90) \\ **Rel:** 100% | **Tesco** - cena/objem |
-| **3** \\ halloween pumpkin lights | **Top:** Living/Home (119.8) \\ **Rel:** 100% \\ **Čas:** 539ms | **Top:** Living/Home (28.6) \\ **Rel:** 70% \\ **Čas:** 269ms | **Top:** Runleo 30 LED (€19.81) \\ **Rel:** 100% | **Top:** Pumpkins String (£1.89) \\ **Rel:** 100% | **Tesco** - cena |
-| **4** \\ mini muffins multipack | **Top:** Tesco White (52.1) \\ **Rel:** 30% \\ **Čas:** 311ms | **Top:** Warburtons (16.7) \\ **Rel:** 60% \\ **Čas:** 266ms | **Top:** GutundGünstig (€2.98) \\ **Rel:** 50% | **Top:** Cadbury Mixed (£4.50) \\ **Rel:** 90% | **Tesco** - mixed flavors |
-| **5** \\ teddy bear toy gift | **Top:** Care Bears (111.3) \\ **Rel:** 100% \\ **Čas:** 577ms | **Top:** Care Bears (21.5) \\ **Rel:** 30% \\ **Čas:** 295ms | **Top:** IKASA Giant (€36.90) \\ **Rel:** 100% | **Top:** Mumbles (£14) \\ **Rel:** 100% | **Tesco/Google** |
-| **6** \\ smart appliances wifi | **Top:** Pro Breeze (81.9) \\ **Rel:** 80% \\ **Čas:** 887ms | **Top:** HYE TV (14.4) \\ **Rel:** 60% \\ **Čas:** 292ms | **Top:** Meross Hub (€19.35) \\ **Rel:** 100% | **Top:** Pro Breeze (£159.99) \\ **Rel:** 100% | **Google** - špecializované |
-| **PRIEMER** | **Rel:** 85% \\ **Čas:** 643ms | **Rel:** 58% \\ **Čas:** 274ms | **Rel:** 92% | **Rel:** 95% | - |
+| **1** \\ chocolate sweeteners | **Top:** Lindt (64.3) \\ **Rel:** 100% \\ **Čas:** 1164ms | **Top:** Maltesers (25.8) \\ **Rel:** 80% \\ **Čas:** 274ms | **Top:** Lily's Stevia (€4.68) \\ **Rel:** 100% | **Top:** Toblerone (£12) \\ **Rel:** 80% | **Google** - presne sweeteners |
+| **2** \\ semi skimmed milk | **Top:** Tesco Semi (92.6) \\ **Rel:** 100% \\ **Čas:** 881ms | **Top:** Arla BOB (29.6) \\ **Rel:** 60% \\ **Čas:** 264ms | **Top:** Delhaize 12pk (€16.66) \\ **Rel:** 100% | **Top:** Cravendale 2L (£2.90) \\ **Rel:** 100% | **Tesco** - cena/objem |
+| **3** \\ halloween pumpkin lights | **Top:** Living/Home (119.8) \\ **Rel:** 100% \\ **Čas:** 539ms | **Top:** Living/Home (28.6) \\ **Rel:** 70% \\ **Čas:** 312ms | **Top:** Runleo 30 LED (€19.81) \\ **Rel:** 100% | **Top:** Pumpkins String (£1.89) \\ **Rel:** 100% | **Tesco** - cena |
+| **4** \\ mini muffins multipack | **Top:** Tesco White (52.1) \\ **Rel:** 30% \\ **Čas:** 311ms | **Top:** Warburtons (16.7) \\ **Rel:** 60% \\ **Čas:** 274ms | **Top:** GutundGünstig (€2.98) \\ **Rel:** 50% | **Top:** Cadbury Mixed (£4.50) \\ **Rel:** 90% | **Tesco** - mixed flavors |
+| **5** \\ teddy bear toy gift | **Top:** Care Bears (111.3) \\ **Rel:** 100% \\ **Čas:** 577ms | **Top:** Care Bears (21.5) \\ **Rel:** 20% \\ **Čas:** 283ms | **Top:** IKASA Giant (€36.90) \\ **Rel:** 100% | **Top:** Mumbles (£14) \\ **Rel:** 100% | **Tesco/Google** |
+| **6** \\ smart appliances wifi | **Top:** Pro Breeze (81.9) \\ **Rel:** 80% \\ **Čas:** 887ms | **Top:** HYE TV (14.4) \\ **Rel:** 40% \\ **Čas:** 286ms | **Top:** Meross Hub (€19.35) \\ **Rel:** 100% | **Top:** Pro Breeze (£159.99) \\ **Rel:** 100% | **Google** - špecializované |
+| **PRIEMER** | **Rel:** 85% \\ **Čas:** 643ms | **Rel:** 55% \\ **Čas:** 282ms | **Rel:** 92% | **Rel:** 95% | - |
 
 **Celkové poradie:**
 
@@ -94,21 +114,31 @@ python cli.py query --mode idf --topk 10 costume halloween grim reaper witch pum
 | **Tesco Domain** | 3/6 | 95% | - | Najlepšia kategorizácia a ceny |
 | **Google Shopping** | 1/6 | 92% | - | Špecializované produkty |
 | **Starý index** | 2/6 | 85% | 643ms | Vysoká kvalita výsledkov |
-| **Nový index** | 0/6 | 58% | 274ms | Rýchlejší, ale nízka relevancia |
+| **Nový index** | 0/6 | 55% | 282ms | Rýchlejší, ale kriticky nízka relevancia |
 
 **Záver:**
   * **Tesco Domain:** 95% relevancia - konzistentne najlepšie
   * **Google Shopping:** 92% relevancia - špecializované produkty
-  * **Starý index:** 85% relevancia - konkurencieschopný
-  * **Nový index:** 58% relevancia - potrebuje zlepšenie rankingu
+  * **Starý index:** 85% relevancia - konkurencieschopný s komerčnými riešeniami
+  * **Nový index:** 55% relevancia - **zhoršenie** z pôvodných 58%, potrebuje urgentné zlepšenie rankingu a kategóriovej filtrácie
 
+===== Analýza kontaminácie nového indexu =====
 
+^ Ukážka ^ Kontaminované pozície ^ Typy kontaminácie ^ Závažnosť ^
+| **1** chocolate sweeteners | #8 | Pet supplies (wash mitt) | Nízka (1/10) |
+| **2** semi skimmed milk | #6,7,9 | Chocolate products | Stredná (3/10) |
+| **3** halloween pumpkin lights | #9,10 | Food (baby food, vegan roast) | Stredná (2/10) |
+| **4** mini muffins multipack | - | Nie je kontaminácia | Žiadna |
+| **5** teddy bear toy | #2,3,4,5,7,8,9,10 | Cleaning (mops), food, cosmetics, bread | **Kritická (8/10)** |
+| **6** smart appliances wifi | #2,5,6,7,10 | Pet food, condiments | Vysoká (5/10) |
 
+**Priemerná kontaminácia:** 3.2 pozície z 10 (32%)
 
-
-
-
-
+**Príčiny kontaminácie:**
+  * Wikipedia enrichment pridáva veľké množstvo textu (brand descriptions, ingredient descriptions)
+  * Produkty s viac ingredienciami dostávajú neprimerané skóre boost
+  * Chýba kategóriová filtrácia alebo boosting
+  * Fuzzy matching expanduje query na príliš veľa clausov
 
 
 

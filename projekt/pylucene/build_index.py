@@ -117,13 +117,13 @@ def build_pylucene_index():
 
             # Index combined ingredient data
             doc.add(TextField("ingredient_descriptions",
-                              " ".join(ingredient_descriptions), Field.Store.NO))
+                              " ".join(ingredient_descriptions), Field.Store.YES))
 
             doc.add(TextField("ingredient_wiki_names",
                               " ".join(ingredient_names), Field.Store.YES))
 
             doc.add(TextField("ingredient_types",
-                              " ".join(ingredient_types), Field.Store.NO))
+                              " ".join(ingredient_types), Field.Store.YES))
 
             # Store structured ingredient data as JSON (for display)
             if ingredients_wiki:

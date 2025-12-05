@@ -17,6 +17,9 @@ SEARCH_FIELDS = [
     "category",
     "brand_description",
     "ingredient_wiki_names",
+"ingredient_descriptions",
+    "brand_introduced",
+    "brand_origin"
 ]
 
 
