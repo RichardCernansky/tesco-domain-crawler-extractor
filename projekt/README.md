@@ -2,7 +2,30 @@
 
 Program poskytuje pipeline na spracovanie produktových stránok: sťahovanie HTML, extrakciu produktov, Spark enrichment, budovanie indexov (klasický aj PyLucene), dotazovanie, štatistiky a testovanie.
 
-## Konfigurácie sa načítavajú zo súborov:
+## Príprava prostredia
+
+### Docker Build
+
+Program vyžaduje PyLucene, preto je odporúčané použiť Docker kontajner.
+
+#### 1. Build Docker image
+```bash
+docker build -t scraper-pylucene -f Dockerfile.pylucene .
+```
+
+#### 2. Spustenie kontajnera
+```bash
+docker run -it --rm \
+  -v $(pwd)/data:/usr/src/app/data \
+  -v $(pwd)/pylucene:/usr/src/app/pylucene \
+  scraper-pylucene bash
+```
+
+Po spustení kontajnera sa dostanete do shellu, kde môžete vykonávať všetky príkazy.
+
+## Konfigurácie
+
+Konfigurácie sa načítavajú zo súborov:
 ```bash
 data/configs/site_config.json
 data/configs/app_config.json
@@ -26,142 +49,185 @@ test
 spark-extract, spark-eue, spark-ewa, spark-build-lookups, spark-enrich
 ```
 
-## Príkaz: fetch-pages
+## Príkazy na sťahovanie a extrakciu
+
+### fetch-pages
 
 Stiahne HTML stránky podľa NDJSON konfigurácií.
-```
+```bash
 python cli.py fetch-pages
 ```
 
-**Vstupy:** definované v site_config.json  
-**Výstupy:** uložené HTML súbory podľa app_config.json
+**Vstupy:** definované v `site_config.json`  
+**Výstupy:** uložené HTML súbory podľa `app_config.json`
 
-## Príkaz: extract-products
+### extract-products
 
 Parsuje HTML a generuje NDJSON s produktmi.
-```
+```bash
 python cli.py extract-products
 ```
 
-**Výstup:**
-```
-data/products.ndjson
-```
+**Výstup:** `data/products.ndjson`
 
 Program vypíše:
 ```
 [OK] products written to data/products.ndjson
 ```
 
-## Príkaz: build-index
-
-Buduje klasický TF-IDF index.
-```
-python cli.py build-index
-```
-
-**Vstup:** cesty a nastavenia z app_config.json  
-**Výstup:** adresár indexu
-
-## Príkaz: query
-
-Dopytuje klasický index a meria čas vyhľadávania.
-```
-python cli.py query --mode {idf,idf_l2} --topk <N> terms...
-```
-
-**Parametre:**
-- `--mode` :: spôsob skórovania (idf, idf_l2)
-- `--topk` :: počet výsledkov
-- `terms` :: 1+ kľúčových slov
-
-Program vypíše čas začiatku aj koniec dopytu v milisekundách.
-
-## Príkaz: search (PyLucene)
-
-Používa PyLucene index, podporuje fuzzy vyhľadávanie a meria reálny čas dotazu.
-```
-python cli.py search --topk 10 --field name muffin chocolate
-```
-
-**Voliteľné:**
-- `--field` :: prehľadáva iba vybrané pole
-- `--no-fuzzy` :: vypne fuzzy matching
-
-**Výstup:** čas spustenia + trvanie dotazu v ms.
-
-## Príkaz: build-pylucene-index
-
-Vytvorí PyLucene index v adresári pylucene/product_index.
-```
-python cli.py build-pylucene-index
-```
-
 ## Spark pipeline
 
-### Extrakcia produktov cez Spark
-```
+### spark-extract
+
+Extrahuje produkty cez Apache Spark z HTML súborov.
+```bash
 python cli.py spark-extract
 ```
 
-### Extrakcia unikátnych entít
-```
+**Vstup:** HTML súbory z `fetch-pages`  
+**Výstup:** NDJSON súbory v `data/spark/extracted/`
+
+### spark-eue
+
+Extrahuje unikátne entity (brands, ingredients) z produktov.
+```bash
 python cli.py spark-eue
 ```
 
-### Extrakcia článkov z Wikipédie
-```
+**Vstup:** produktové dáta  
+**Výstup:** zoznam unikátnych brands a ingredients
+
+### spark-ewa
+
+Extrahuje články z Wikipédie pre enrichment.
+```bash
 python cli.py spark-ewa
 ```
 
-### Budovanie brand/ingredient lookup tabuliek
-```
+**Vstup:** Wikipedia dump  
+**Výstup:** relevantné články pre brands a ingredients
+
+### spark-build-lookups
+
+Buduje brand/ingredient lookup tabuľky pre enrichment.
+```bash
 python cli.py spark-build-lookups
 ```
 
-### Enrichment produktov
-```
+**Vstup:** extrahované entity a Wikipedia články  
+**Výstup:** lookup tabuľky v `data/lookups/`
+
+### spark-enrich
+
+Obohacuje produkty o Wikipedia informácie.
+```bash
 python cli.py spark-enrich
 ```
 
-## Príkaz: stats
+**Vstup:** produktové dáta + lookup tabuľky  
+**Výstup:** obohátené produkty v `data/wiki/out/products_enriched.ndjson/`
+
+## Budovanie indexov
+
+### build-index
+
+Buduje klasický TF-IDF index (custom implementácia).
+```bash
+python cli.py build-index
+```
+
+**Vstup:** cesty a nastavenia z `app_config.json`  
+**Výstup:** adresár indexu v `data/index/`
+
+### build-pylucene-index
+
+Vytvorí PyLucene index v adresári `pylucene/product_index`.
+```bash
+python cli.py build-pylucene-index
+```
+
+**Vstup:** obohátené produkty  
+**Výstup:** PyLucene index v `pylucene/product_index/`
+
+## Vyhľadávanie
+
+### query
+
+Dopytuje klasický TF-IDF index a meria čas vyhľadávania.
+```bash
+python cli.py query --mode {idf,idf_l2} --topk <N> <terms...>
+```
+
+**Parametre:**
+- `--mode` - spôsob skórovania (`idf`, `idf_l2`)
+- `--topk` - počet výsledkov (default: 10)
+- `<terms>` - 1+ kľúčových slov
+
+**Príklad:**
+```bash
+python cli.py query --mode idf_l2 --topk 10 chocolate milk
+```
+
+Program vypíše čas začiatku aj konca dopytu v milisekundách.
+
+### search
+
+Používa PyLucene index, podporuje fuzzy vyhľadávanie a meria reálny čas dotazu.
+```bash
+python cli.py search --topk 10 --field <pole> <terms...>
+```
+
+**Parametre:**
+- `--topk` - počet výsledkov (default: 10)
+- `--field` - prehľadáva iba vybrané pole (voliteľné)
+- `--no-fuzzy` - vypne fuzzy matching (voliteľné)
+- `<terms>` - kľúčové slová
+
+**Príklady:**
+```bash
+# Základné vyhľadávanie
+python cli.py search chocolate muffin
+
+# Vyhľadávanie v konkrétnom poli
+python cli.py search --field name chocolate
+
+# Bez fuzzy matchingu
+python cli.py search --no-fuzzy chocolate muffin
+
+# S limitom výsledkov
+python cli.py search --topk 20 milk semi skimmed
+```
+
+**Výstup:** čas spustenia + trvanie dotazu v ms + zoznam produktov so skóre.
+
+## Ostatné príkazy
+
+### stats
 
 Vypíše štatistiku indexu a dát.
-```
+```bash
 python cli.py stats
 ```
 
-## Príkaz: test
+**Výstup:**
+- Počet produktov
+- Počet indexovaných dokumentov
+- Veľkosť indexu
+- Distribúcia kategórií
+- Ďalšie metriky
+
+### test
 
 Spúšťa interné overenia pipeline.
-```
+```bash
 python cli.py test
 ```
 
-## Odporúčaný spôsob: Spúšťanie v Dockeri
-
-Najspoľahlivejšie je spúšťať indexer aj PyLucene search v Dockeri, pretože PyLucene používa natívne knižnice.
-
-### Build PyLucene index
-```bash
-docker run -it --rm \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/pylucene/product_index:/app/pylucene/product_index \
-  -v $(pwd)/pylucene/build_index.py:/app/pylucene/build_index.py \
-  scraper-pylucene \
-  python /app/pylucene/build_index.py
-```
-
-### Spustenie PyLucene searchera
-```bash
-docker run -it --rm \
-  -v $(pwd)/pylucene/product_index:/app/pylucene/product_index \
-  -v $(pwd)/pylucene/searcher.py:/app/pylucene/searcher.py \
-  scraper-pylucene \
-  python /app/pylucene/searcher.py
-```
+**Účel:** validácia funkčnosti jednotlivých komponentov
 
 ## Tokenizačná pipeline (PyLucene)
+
+PyLucene používa nasledujúcu tokenizačnú pipeline:
 ```
 Text Input
     ↓
@@ -174,13 +240,37 @@ Text Input
 Indexed Tokens
 ```
 
+**Popis krokov:**
+- `StandardTokenizer` - rozdelí text na tokeny
+- `LowerCaseFilter` - prevedie na malé písmená
+- `StopFilter` - odstráni stop slová (the, a, an, in, ...)
+
 ## Typický workflow
+
+Odporúčané poradie vykonávania príkazov:
 ```bash
-1. fetch-pages
-2. extract-products
-3. spark-extract (a voliteľný enrichment)
-4. build-index
-5. build-pylucene-index
-6. query alebo search
-7. stats / test podľa potreby
+# 1. Stiahnutie stránok
+python cli.py fetch-pages
+
+# 2. Extrakcia produktov
+python cli.py extract-products
+
+# 3. Spark pipeline (voliteľné, ale odporúčané pre enrichment)
+python cli.py spark-extract
+python cli.py spark-eue
+python cli.py spark-ewa
+python cli.py spark-build-lookups
+python cli.py spark-enrich
+
+# 4. Budovanie indexov
+python cli.py build-index
+python cli.py build-pylucene-index
+
+# 5. Vyhľadávanie
+python cli.py query --mode idf_l2 --topk 10 chocolate milk
+python cli.py search --topk 10 chocolate milk
+
+# 6. Štatistiky a testy
+python cli.py stats
+python cli.py test
 ```
